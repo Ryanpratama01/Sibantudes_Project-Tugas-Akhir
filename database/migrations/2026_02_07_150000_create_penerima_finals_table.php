@@ -13,16 +13,31 @@ return new class extends Migration
     {
         Schema::create('penerima_finals', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('calon_penerima_id')->constrained('calon_penerimas')->onDelete('cascade');
+
+            $table->foreignId('calon_penerima_id')
+                ->constrained('calon_penerimas')
+                ->onDelete('cascade');
+
             $table->date('tanggal_penetapan');
-            $table->string('periode_bantuan'); // Contoh: "2024 Triwulan 1"
+
+            $table->string('periode_bantuan'); // contoh: 2026 Triwulan 1
+
             $table->decimal('jumlah_bantuan', 15, 2);
-            $table->enum('status_pencairan', ['belum_cair', 'sudah_cair'])->default('belum_cair');
+
+            $table->enum('status_pencairan', [
+                'belum_cair',
+                'sudah_cair'
+            ])->default('belum_cair');
+
             $table->date('tanggal_pencairan')->nullable();
+
             $table->timestamps();
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::dropIfExists('penerima_finals');

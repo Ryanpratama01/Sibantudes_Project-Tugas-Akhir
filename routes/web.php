@@ -10,12 +10,9 @@ use App\Models\Dusun;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\FilterisasiController;
 
-// RT Controllers (folder Rt)
+// RT Controllers
 use App\Http\Controllers\Rt\DashboardController as RtDashboardController;
 use App\Http\Controllers\Rt\CalonPenerimaController as RtCalonPenerimaController;
-
-// Profile default (bawaan Breeze/Jetstream)
-use App\Http\Controllers\ProfileController as UserProfileController;
 
 /*
 |--------------------------------------------------------------------------
@@ -49,7 +46,6 @@ Route::get('/dashboard', function () {
     abort(403, 'Role tidak dikenali.');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-
 /*
 |--------------------------------------------------------------------------
 | ADMIN ROUTES (ADMIN ONLY)
@@ -67,18 +63,28 @@ Route::middleware(['auth', 'verified', 'is_active'])
                 abort(403, 'Akses ditolak: hanya Admin.');
             }
 
-            $totalWarga    = CalonPenerima::count();
-            $totalDusun    = Dusun::count();
-            $totalPenerima = CalonPenerima::where('status_verifikasi', 'disetujui')->count();
-            $totalPending  = CalonPenerima::where('status_verifikasi', 'pending')->count();
+            $visibleStatuses = ['terkirim', 'sedang_validasi', 'selesai'];
+
+            $totalWarga = CalonPenerima::whereIn('tracking_status', $visibleStatuses)->count();
+            $totalDusun = Dusun::count();
+            $totalPenerima = CalonPenerima::whereIn('tracking_status', $visibleStatuses)
+                ->where('status_verifikasi', 'disetujui')
+                ->count();
+            $totalPending = CalonPenerima::whereIn('tracking_status', $visibleStatuses)
+                ->where('status_verifikasi', 'pending')
+                ->count();
 
             $statusDistribution = CalonPenerima::select('status_verifikasi as status', DB::raw('COUNT(*) as total'))
+                ->whereIn('tracking_status', $visibleStatuses)
                 ->groupBy('status_verifikasi')
                 ->get();
 
             $wargaPerDusun = DB::table('dusuns')
                 ->leftJoin('rts', 'rts.dusun_id', '=', 'dusuns.id')
-                ->leftJoin('calon_penerimas', 'calon_penerimas.rt_id', '=', 'rts.id')
+                ->leftJoin('calon_penerimas', function ($join) use ($visibleStatuses) {
+                    $join->on('calon_penerimas.rt_id', '=', 'rts.id')
+                        ->whereIn('calon_penerimas.tracking_status', $visibleStatuses);
+                })
                 ->select('dusuns.nama_dusun as dusun', DB::raw('COUNT(calon_penerimas.id) as total'))
                 ->groupBy('dusuns.id', 'dusuns.nama_dusun')
                 ->orderBy('dusuns.nama_dusun')
@@ -97,6 +103,7 @@ Route::middleware(['auth', 'verified', 'is_active'])
                     'prediksi_kelayakans.probability as probabilitas',
                     'calon_penerimas.status_verifikasi as status'
                 )
+                ->whereIn('calon_penerimas.tracking_status', $visibleStatuses)
                 ->orderBy('prediksi_kelayakans.probability', 'desc')
                 ->limit(10)
                 ->get();
@@ -112,7 +119,6 @@ Route::middleware(['auth', 'verified', 'is_active'])
             ));
         })->name('dashboard');
 
-
         // DATA WARGA + SEARCH
         Route::get('/data-warga', function (Request $request) {
             $user = $request->user();
@@ -124,6 +130,7 @@ Route::middleware(['auth', 'verified', 'is_active'])
             $q = trim((string) $request->query('q', ''));
 
             $wargasQuery = CalonPenerima::with(['rt.dusun', 'prediksiKelayakan', 'user'])
+                ->whereIn('tracking_status', ['terkirim', 'sedang_validasi', 'selesai'])
                 ->latest();
 
             if ($q !== '') {
@@ -139,47 +146,69 @@ Route::middleware(['auth', 'verified', 'is_active'])
             }
 
             $wargas = $wargasQuery->paginate(10)->withQueryString();
+
             return view('admin.data-warga', compact('dusuns', 'wargas'));
         })->name('data-warga');
 
-
-        // SETUJUI / TOLAK
-        Route::post('/data-warga/{id}/setujui', function (Request $request, $id) {
+        // MULAI VALIDASI
+        Route::post('/data-warga/{id}/mulai-validasi', function (Request $request, $id) {
             $user = $request->user();
             if (!$user || $user->role !== 'admin') {
                 abort(403, 'Akses ditolak: hanya Admin.');
             }
 
             $warga = CalonPenerima::findOrFail($id);
-            $warga->update(['status_verifikasi' => 'disetujui']);
-            return back()->with('success', 'Data warga berhasil disetujui.');
-        })->name('data-warga.setujui');
 
-        Route::post('/data-warga/{id}/tolak', function (Request $request, $id) {
+            if ($warga->tracking_status !== 'terkirim') {
+                return back()->with('error', 'Data ini belum bisa masuk tahap validasi.');
+            }
+
+            $warga->update([
+                'tracking_status' => 'sedang_validasi',
+                'status_verifikasi' => 'pending',
+            ]);
+
+            return back()->with('success', 'Proses validasi data telah dimulai.');
+        })->name('data-warga.mulai-validasi');
+
+        // KIRIM HASIL VALIDASI KE RT
+        Route::post('/data-warga/{id}/selesai-validasi', function (Request $request, $id) {
             $user = $request->user();
             if (!$user || $user->role !== 'admin') {
                 abort(403, 'Akses ditolak: hanya Admin.');
             }
 
             $warga = CalonPenerima::findOrFail($id);
-            $warga->update(['status_verifikasi' => 'ditolak']);
-            return back()->with('success', 'Data warga berhasil ditolak.');
-        })->name('data-warga.tolak');
 
+            if ($warga->tracking_status !== 'sedang_validasi') {
+                return back()->with('error', 'Data ini belum berada pada tahap sedang divalidasi.');
+            }
+
+            if (!in_array($warga->status_verifikasi, ['disetujui', 'ditolak'])) {
+                return back()->with('error', 'Hasil akhir belum ditetapkan. Silakan proses filterisasi terlebih dahulu.');
+            }
+
+            $warga->update([
+                'tracking_status' => 'selesai',
+            ]);
+
+            return back()->with('success', 'Hasil validasi berhasil dikirim ke RT.');
+        })->name('data-warga.selesai-validasi');
 
         // DATA AKUN (AdminController)
         Route::get('/data-akun', [AdminController::class, 'dataAkun'])->name('data-akun');
         Route::post('/data-akun/{id}/role', [AdminController::class, 'ubahRole'])->name('data-akun.role');
         Route::post('/data-akun/{id}/toggle-aktif', [AdminController::class, 'toggleAktif'])->name('data-akun.toggle-aktif');
-        Route::post('/data-akun/{id}/hapus', [AdminController::class, 'hapusUser'])->name('data-akun.hapus');
+        Route::delete('/data-akun/{id}/hapus', [AdminController::class, 'hapusUser'])->name('data-akun.hapus');
 
-        // Placeholder
+        // FILTERISASI
         Route::get('/filterisasi', [FilterisasiController::class, 'index'])->name('filterisasi');
         Route::post('/filterisasi/tetapkan', [FilterisasiController::class, 'tetapkan'])->name('filterisasi.tetapkan');
         Route::post('/filterisasi/reset', [FilterisasiController::class, 'resetDusun'])->name('filterisasi.reset');
+
+        // LAPORAN
         Route::get('/laporan', fn () => view('admin.laporan'))->name('laporan');
     });
-
 
 /*
 |--------------------------------------------------------------------------
@@ -192,23 +221,14 @@ Route::middleware(['auth', 'verified'])
     ->group(function () {
 
         // DASHBOARD RT
-        Route::get('/dashboard', [RtDashboardController::class, 'index'])
-            ->name('dashboard');
+        Route::get('/dashboard', [RtDashboardController::class, 'index'])->name('dashboard');
 
-        // Resource RT
+        // AJUKAN DATA KE ADMIN
+        Route::patch('/calon-penerima/{calonPenerima}/ajukan', [RtCalonPenerimaController::class, 'ajukan'])
+            ->name('calon-penerima.ajukan');
+
+        // RESOURCE RT
         Route::resource('calon-penerima', RtCalonPenerimaController::class);
     });
-
-
-/*
-|--------------------------------------------------------------------------
-| PROFILE
-|--------------------------------------------------------------------------
-*/
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [UserProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [UserProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [UserProfileController::class, 'destroy'])->name('profile.destroy');
-});
 
 require __DIR__ . '/auth.php';

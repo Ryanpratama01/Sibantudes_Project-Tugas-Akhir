@@ -5,7 +5,7 @@
                 <h2 class="font-semibold text-xl text-gray-800 leading-tight">Edit Pendataan Warga</h2>
                 <p class="text-sm text-gray-500 mt-0.5">Perbarui data dengan benar sebelum menyimpan.</p>
             </div>
-            <a href="{{ route('calon-penerima.index') }}"
+            <a href="{{ route('rt.calon-penerima.index') }}"
                class="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 text-gray-600 text-sm font-medium rounded-xl hover:bg-gray-50 transition">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
@@ -32,9 +32,12 @@
         </div>
     @endif
 
-    <form action="{{ route('calon-penerima.update', $calonPenerima->id) }}" method="POST" id="formEditPendataan" novalidate>
+    <form action="{{ route('rt.calon-penerima.update', $calonPenerima->id) }}" method="POST" id="formEditPendataan" novalidate>
         @csrf
         @method('PUT')
+
+        {{-- hidden aman, walau nanti tetap di-override controller --}}
+        <input type="hidden" name="rt_id" value="{{ $calonPenerima->rt_id }}">
 
         {{-- SECTION 1: Data Identitas --}}
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 mb-4 overflow-hidden">
@@ -44,19 +47,14 @@
             </div>
             <div class="p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 
-                {{-- RT --}}
+                {{-- RT (readonly) --}}
                 <div class="field-group">
-                    <label class="block text-xs font-semibold text-gray-600 mb-1">RT <span class="text-red-500">*</span></label>
-                    <select name="rt_id" id="rt_id"
-                        class="input-field w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50">
-                        <option value="">-- Pilih RT --</option>
-                        @foreach($rts as $rt)
-                            <option value="{{ $rt->id }}" {{ (string)old('rt_id', $calonPenerima->rt_id) === (string)$rt->id ? 'selected' : '' }}>
-                                RT {{ str_pad($rt->nomor_rt, 3, '0', STR_PAD_LEFT) }} - {{ $rt->dusun->nama_dusun ?? '' }}
-                            </option>
-                        @endforeach
-                    </select>
-                    <p class="error-msg text-xs text-red-500 mt-1 hidden">RT wajib dipilih.</p>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">RT</label>
+                    <input type="text"
+                        value="RT {{ str_pad($calonPenerima->rt->nomor_rt ?? 0, 3, '0', STR_PAD_LEFT) }}"
+                        class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-gray-100 text-gray-700 cursor-not-allowed"
+                        readonly>
+                    <p class="text-[11px] text-gray-400 mt-1">RT mengikuti akun RT yang sedang login.</p>
                 </div>
 
                 {{-- NO KK --}}
@@ -113,7 +111,7 @@
                 <div class="field-group">
                     <label class="block text-xs font-semibold text-gray-600 mb-1">Tanggal Lahir <span class="text-red-500">*</span></label>
                     <input type="date" name="tanggal_lahir" id="tanggal_lahir"
-                        value="{{ old('tanggal_lahir', $calonPenerima->tanggal_lahir) }}"
+                        value="{{ old('tanggal_lahir', $calonPenerima->tanggal_lahir ? \Carbon\Carbon::parse($calonPenerima->tanggal_lahir)->format('Y-m-d') : '') }}"
                         class="input-field w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
                         required>
                     <p class="error-msg text-xs text-red-500 mt-1 hidden">Tanggal lahir wajib diisi.</p>
@@ -162,13 +160,14 @@
                     <p class="error-msg text-xs text-red-500 mt-1 hidden">Alamat minimal 5 karakter.</p>
                 </div>
 
+                {{-- DUSUN (readonly) --}}
                 <div class="field-group">
-                    <label class="block text-xs font-semibold text-gray-600 mb-1">Dusun <span class="text-red-500">*</span></label>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Dusun</label>
                     <input type="text" name="desa" id="desa"
                         value="{{ old('desa', $calonPenerima->desa) }}"
-                        class="input-field w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
-                        placeholder="Nama dusun" required>
-                    <p class="error-msg text-xs text-red-500 mt-1 hidden">Dusun wajib diisi.</p>
+                        class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-gray-100 text-gray-700 cursor-not-allowed"
+                        readonly>
+                    <p class="text-[11px] text-gray-400 mt-1">Dusun mengikuti RT dan tidak dapat diubah.</p>
                 </div>
 
                 <div class="field-group">
@@ -264,12 +263,14 @@
             if (input) input.classList.add('border-red-400', 'bg-red-50');
             if (err) { err.textContent = msg; err.classList.remove('hidden'); }
         }
+
         function clearError(id) {
             const input = document.getElementById(id);
             const err = input?.parentElement?.querySelector('.error-msg');
             if (input) input.classList.remove('border-red-400', 'bg-red-50');
             if (err) err.classList.add('hidden');
         }
+
         function showToast(msg) {
             const t = document.getElementById('toast');
             document.getElementById('toast-msg').textContent = msg;
@@ -278,20 +279,19 @@
         }
 
         const rules = {
-            rt_id:             v => v !== ''               ? null : 'RT wajib dipilih.',
-            nik:               v => /^\d{16}$/.test(v)     ? null : 'NIK harus tepat 16 digit angka.',
-            no_kk:             v => /^\d{16}$/.test(v)     ? null : 'No. KK harus tepat 16 digit angka.',
-            nama_lengkap:      v => v.trim().length >= 3   ? null : 'Nama minimal 3 karakter.',
-            tempat_lahir:      v => v.trim().length >= 2   ? null : 'Tempat lahir wajib diisi.',
-            tanggal_lahir:     v => v !== ''               ? null : 'Tanggal lahir wajib diisi.',
+            nik:               v => /^\d{16}$/.test(v) ? null : 'NIK harus tepat 16 digit angka.',
+            no_kk:             v => /^\d{16}$/.test(v) ? null : 'No. KK harus tepat 16 digit angka.',
+            nama_lengkap:      v => v.trim().length >= 3 ? null : 'Nama minimal 3 karakter.',
+            tempat_lahir:      v => v.trim().length >= 2 ? null : 'Tempat lahir wajib diisi.',
+            tanggal_lahir:     v => v !== '' ? null : 'Tanggal lahir wajib diisi.',
             usia:              v => (parseInt(v) >= 17 && parseInt(v) <= 100) ? null : 'Usia harus antara 17–100.',
-            status_perkawinan: v => v !== ''               ? null : 'Status perkawinan wajib dipilih.',
-            alamat:            v => v.trim().length >= 5   ? null : 'Alamat minimal 5 karakter.',
-            desa:              v => v.trim().length >= 2   ? null : 'Dusun wajib diisi.',
-            aset_kepemilikan:  v => v.trim().length >= 2   ? null : 'Aset kepemilikan wajib diisi.',
-            pekerjaan:         v => v.trim().length >= 2   ? null : 'Pekerjaan wajib diisi.',
-            penghasilan:       v => parseFloat(v) >= 0     ? null : 'Penghasilan tidak boleh negatif.',
-            jumlah_tanggungan: v => parseInt(v) >= 0       ? null : 'Jumlah tanggungan tidak boleh negatif.',
+            status_perkawinan: v => v !== '' ? null : 'Status perkawinan wajib dipilih.',
+            alamat:            v => v.trim().length >= 5 ? null : 'Alamat minimal 5 karakter.',
+            desa:              v => v.trim().length >= 2 ? null : 'Dusun wajib diisi.',
+            aset_kepemilikan:  v => v.trim().length >= 2 ? null : 'Aset kepemilikan wajib diisi.',
+            pekerjaan:         v => v.trim().length >= 2 ? null : 'Pekerjaan wajib diisi.',
+            penghasilan:       v => parseFloat(v) >= 0 ? null : 'Penghasilan tidak boleh negatif.',
+            jumlah_tanggungan: v => parseInt(v) >= 0 ? null : 'Jumlah tanggungan tidak boleh negatif.',
         };
 
         Object.keys(rules).forEach(id => {
