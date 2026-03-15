@@ -7,21 +7,23 @@ use Illuminate\Http\Request;
 use App\Models\CalonPenerima;
 use App\Models\Dusun;
 
+use App\Http\Controllers\LandingPageController;
+
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\FilterisasiController;
+use App\Http\Controllers\Admin\LaporanController;
 
 // RT Controllers
 use App\Http\Controllers\Rt\DashboardController as RtDashboardController;
 use App\Http\Controllers\Rt\CalonPenerimaController as RtCalonPenerimaController;
+use App\Http\Controllers\Rt\LaporanController as RtLaporanController;
 
 /*
 |--------------------------------------------------------------------------
-| ROOT
+| ROOT / LANDING PAGE PUBLIK
 |--------------------------------------------------------------------------
 */
-Route::get('/', function () {
-    return redirect()->route('login');
-});
+Route::get('/', [LandingPageController::class, 'index'])->name('landing');
 
 /*
 |--------------------------------------------------------------------------
@@ -59,6 +61,7 @@ Route::middleware(['auth', 'verified', 'is_active'])
         // DASHBOARD ADMIN
         Route::get('/dashboard', function (Request $request) {
             $user = $request->user();
+
             if (!$user || $user->role !== 'admin') {
                 abort(403, 'Akses ditolak: hanya Admin.');
             }
@@ -66,10 +69,13 @@ Route::middleware(['auth', 'verified', 'is_active'])
             $visibleStatuses = ['terkirim', 'sedang_validasi', 'selesai'];
 
             $totalWarga = CalonPenerima::whereIn('tracking_status', $visibleStatuses)->count();
+
             $totalDusun = Dusun::count();
+
             $totalPenerima = CalonPenerima::whereIn('tracking_status', $visibleStatuses)
                 ->where('status_verifikasi', 'disetujui')
                 ->count();
+
             $totalPending = CalonPenerima::whereIn('tracking_status', $visibleStatuses)
                 ->where('status_verifikasi', 'pending')
                 ->count();
@@ -122,6 +128,7 @@ Route::middleware(['auth', 'verified', 'is_active'])
         // DATA WARGA + SEARCH
         Route::get('/data-warga', function (Request $request) {
             $user = $request->user();
+
             if (!$user || $user->role !== 'admin') {
                 abort(403, 'Akses ditolak: hanya Admin.');
             }
@@ -150,9 +157,30 @@ Route::middleware(['auth', 'verified', 'is_active'])
             return view('admin.data-warga', compact('dusuns', 'wargas'));
         })->name('data-warga');
 
+        // TAMBAHAN: BERSIHKAN DATA WARGA AKTIF
+        Route::delete('/data-warga/bersihkan', function (Request $request) {
+            $user = $request->user();
+
+            if (!$user || $user->role !== 'admin') {
+                abort(403, 'Akses ditolak: hanya Admin.');
+            }
+
+            DB::transaction(function () {
+                // hapus hasil prediksi yang terkait data aktif
+                DB::table('prediksi_kelayakans')->delete();
+
+                // hapus data pengajuan aktif
+                DB::table('calon_penerimas')->delete();
+            });
+
+            return redirect()->route('admin.data-warga')
+                ->with('success', 'Semua data warga aktif berhasil dibersihkan. Arsip laporan tetap aman.');
+        })->name('data-warga.bersihkan');
+
         // MULAI VALIDASI
         Route::post('/data-warga/{id}/mulai-validasi', function (Request $request, $id) {
             $user = $request->user();
+
             if (!$user || $user->role !== 'admin') {
                 abort(403, 'Akses ditolak: hanya Admin.');
             }
@@ -174,6 +202,7 @@ Route::middleware(['auth', 'verified', 'is_active'])
         // KIRIM HASIL VALIDASI KE RT
         Route::post('/data-warga/{id}/selesai-validasi', function (Request $request, $id) {
             $user = $request->user();
+
             if (!$user || $user->role !== 'admin') {
                 abort(403, 'Akses ditolak: hanya Admin.');
             }
@@ -195,7 +224,7 @@ Route::middleware(['auth', 'verified', 'is_active'])
             return back()->with('success', 'Hasil validasi berhasil dikirim ke RT.');
         })->name('data-warga.selesai-validasi');
 
-        // DATA AKUN (AdminController)
+        // DATA AKUN
         Route::get('/data-akun', [AdminController::class, 'dataAkun'])->name('data-akun');
         Route::post('/data-akun/{id}/role', [AdminController::class, 'ubahRole'])->name('data-akun.role');
         Route::post('/data-akun/{id}/toggle-aktif', [AdminController::class, 'toggleAktif'])->name('data-akun.toggle-aktif');
@@ -206,8 +235,15 @@ Route::middleware(['auth', 'verified', 'is_active'])
         Route::post('/filterisasi/tetapkan', [FilterisasiController::class, 'tetapkan'])->name('filterisasi.tetapkan');
         Route::post('/filterisasi/reset', [FilterisasiController::class, 'resetDusun'])->name('filterisasi.reset');
 
-        // LAPORAN
-        Route::get('/laporan', fn () => view('admin.laporan'))->name('laporan');
+        // LAPORAN ADMIN
+        Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan');
+        Route::get('/laporan/pdf', [LaporanController::class, 'exportPdf'])->name('laporan.pdf');
+        Route::get('/laporan/excel', [LaporanController::class, 'exportExcel'])->name('laporan.excel');
+        Route::post('/laporan/kirim-ke-rt', [LaporanController::class, 'kirimKeRt'])->name('laporan.kirim-ke-rt');
+        Route::post('/laporan/upload-publik-pdf', [LaporanController::class, 'uploadPublikPdf'])->name('laporan.upload-publik-pdf');
+        Route::delete('/laporan/publik-pdf/{id}', [LaporanController::class, 'hapusPublikPdf'])->name('laporan.hapus-publik-pdf');
+        Route::delete('/laporan/bersihkan-riwayat-selesai', [LaporanController::class, 'bersihkanRiwayatSelesai'])
+              ->name('laporan.bersihkan-riwayat-selesai');
     });
 
 /*
@@ -215,13 +251,16 @@ Route::middleware(['auth', 'verified', 'is_active'])
 | RT ROUTES (RT ONLY)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'verified'])
+Route::middleware(['auth', 'verified', 'is_active'])
     ->prefix('rt')
     ->name('rt.')
     ->group(function () {
 
         // DASHBOARD RT
         Route::get('/dashboard', [RtDashboardController::class, 'index'])->name('dashboard');
+
+        // LAPORAN RT
+        Route::get('/laporan', [RtLaporanController::class, 'index'])->name('laporan.index');
 
         // AJUKAN DATA KE ADMIN
         Route::patch('/calon-penerima/{calonPenerima}/ajukan', [RtCalonPenerimaController::class, 'ajukan'])

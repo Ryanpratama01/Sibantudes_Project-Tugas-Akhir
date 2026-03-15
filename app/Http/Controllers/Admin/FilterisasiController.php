@@ -14,6 +14,7 @@ class FilterisasiController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
+
         if (!$user || $user->role !== 'admin') {
             abort(403, 'Akses ditolak: hanya Admin.');
         }
@@ -28,9 +29,11 @@ class FilterisasiController extends Controller
         }
 
         $candidates = collect();
-        $pickedIds  = collect();
+        $pickedNiks = collect();
 
         if ($dusunId > 0) {
+            $dusun = Dusun::find($dusunId);
+
             $query = CalonPenerima::query()
                 ->with(['rt.dusun', 'prediksiKelayakan'])
                 ->whereIn('tracking_status', ['sedang_validasi', 'selesai'])
@@ -45,16 +48,19 @@ class FilterisasiController extends Controller
 
             $candidates = $query->paginate(15)->withQueryString();
 
-            $pickedIds = PenerimaFinal::whereIn('calon_penerima_id', $candidates->pluck('id')->all())
-                ->pluck('calon_penerima_id');
+            $pickedNiks = PenerimaFinal::query()
+                ->where('status_verifikasi', 'disetujui')
+                ->where('nama_dusun', $dusun?->nama_dusun)
+                ->pluck('nik');
         }
 
-        return view('admin.filterisasi', compact('dusuns', 'dusunId', 'kuota', 'candidates', 'pickedIds'));
+        return view('admin.filterisasi', compact('dusuns', 'dusunId', 'kuota', 'candidates', 'pickedNiks'));
     }
 
     public function tetapkan(Request $request)
     {
         $user = $request->user();
+
         if (!$user || $user->role !== 'admin') {
             abort(403, 'Akses ditolak: hanya Admin.');
         }
@@ -68,14 +74,16 @@ class FilterisasiController extends Controller
         $kuota   = (int) ($data['kuota'] ?? 7);
 
         DB::transaction(function () use ($dusunId, $kuota) {
-            // Ambil semua kandidat dalam dusun yang sedang divalidasi / sudah selesai
+            $dusun = Dusun::findOrFail($dusunId);
+
             $allCandidates = CalonPenerima::query()
+                ->with(['rt.dusun', 'prediksiKelayakan'])
                 ->whereIn('tracking_status', ['sedang_validasi', 'selesai'])
                 ->whereHas('rt', function ($r) use ($dusunId) {
                     $r->where('dusun_id', $dusunId);
                 })
                 ->leftJoin('prediksi_kelayakans', 'prediksi_kelayakans.calon_penerima_id', '=', 'calon_penerimas.id')
-                ->select('calon_penerimas.id', DB::raw('COALESCE(prediksi_kelayakans.probability, 0) as prob'))
+                ->select('calon_penerimas.*', DB::raw('COALESCE(prediksi_kelayakans.probability, 0) as prob'))
                 ->orderByDesc('prob')
                 ->orderByDesc('calon_penerimas.created_at')
                 ->get();
@@ -83,38 +91,55 @@ class FilterisasiController extends Controller
             $topIds = $allCandidates->take($kuota)->pluck('id')->all();
             $allIds = $allCandidates->pluck('id')->all();
 
-            // Hapus hasil final lama untuk kandidat pada dusun ini
-            if (!empty($allIds)) {
-                PenerimaFinal::whereIn('calon_penerima_id', $allIds)->delete();
-            }
-
-            // Simpan hasil final penerima yang masuk kuota
-            foreach ($topIds as $id) {
-                PenerimaFinal::updateOrCreate(
-                    ['calon_penerima_id' => $id],
-                    [
-                        'tanggal_penetapan' => now()->toDateString(),
-                        'periode_bantuan'   => date('Y') . ' Triwulan 1',
-                        'jumlah_bantuan'    => 0,
-                        'status_pencairan'  => 'belum_cair',
-                        'tanggal_pencairan' => null,
-                    ]
-                );
-            }
-
-            // Yang masuk kuota = disetujui
+            // Top kuota = disetujui
             if (!empty($topIds)) {
                 CalonPenerima::whereIn('id', $topIds)->update([
                     'status_verifikasi' => 'disetujui',
                 ]);
             }
 
-            // Yang tidak masuk kuota = ditolak
+            // Sisanya = ditolak
             $notPickedIds = array_diff($allIds, $topIds);
+
             if (!empty($notPickedIds)) {
                 CalonPenerima::whereIn('id', $notPickedIds)->update([
                     'status_verifikasi' => 'ditolak',
                 ]);
+            }
+
+            // Ambil ulang data final setelah status diperbarui
+            $finalCandidates = CalonPenerima::query()
+                ->with(['rt.dusun', 'prediksiKelayakan'])
+                ->whereIn('id', $allIds)
+                ->get();
+
+            foreach ($finalCandidates as $candidate) {
+                $probability = $candidate->prediksiKelayakan->probability ?? 0;
+
+                PenerimaFinal::updateOrCreate(
+                    [
+                        'nik' => $candidate->nik,
+                        'periode_bantuan' => '2026 Triwulan 1',
+                    ],
+                    [
+                        'nama_lengkap'      => $candidate->nama_lengkap ?? $candidate->nama ?? '-',
+                        'no_kk'             => $candidate->no_kk ?? '-',
+                        'rt_id'             => $candidate->rt_id,
+                        'nomor_rt'          => $candidate->rt?->nomor_rt ?? null,
+                        'nama_dusun'        => $candidate->rt?->dusun?->nama_dusun ?? $dusun->nama_dusun,
+                        'pekerjaan'         => $candidate->pekerjaan ?? '-',
+                        'penghasilan'       => $candidate->penghasilan ?? 0,
+                        'jumlah_tanggungan' => $candidate->jumlah_tanggungan ?? 0,
+                        'aset_kepemilikan'  => $candidate->aset_kepemilikan ?? '-',
+                        'bantuan_lain'      => $candidate->bantuan_lain ?? 'tidak',
+                        'usia'              => $candidate->usia ?? 0,
+                        'probability'       => $probability,
+                        'status_verifikasi' => $candidate->status_verifikasi ?? 'pending',
+                        'tanggal_penetapan' => now()->toDateString(),
+                        'periode_bantuan'   => '2026 Triwulan 1',
+                        'jumlah_bantuan'    => 300000,
+                    ]
+                );
             }
         });
 
@@ -124,6 +149,7 @@ class FilterisasiController extends Controller
     public function resetDusun(Request $request)
     {
         $user = $request->user();
+
         if (!$user || $user->role !== 'admin') {
             abort(403, 'Akses ditolak: hanya Admin.');
         }
@@ -132,24 +158,24 @@ class FilterisasiController extends Controller
             'dusun_id' => 'required|exists:dusuns,id',
         ]);
 
-        $dusunId = (int) $data['dusun_id'];
+        $dusun = Dusun::findOrFail($data['dusun_id']);
 
-        DB::transaction(function () use ($dusunId) {
+        DB::transaction(function () use ($dusun) {
             $candidateIds = CalonPenerima::query()
-                ->whereHas('rt', function ($r) use ($dusunId) {
-                    $r->where('dusun_id', $dusunId);
+                ->whereHas('rt', function ($r) use ($dusun) {
+                    $r->where('dusun_id', $dusun->id);
                 })
                 ->whereIn('tracking_status', ['sedang_validasi', 'selesai'])
                 ->pluck('id')
                 ->all();
 
             if (!empty($candidateIds)) {
-                PenerimaFinal::whereIn('calon_penerima_id', $candidateIds)->delete();
-
                 CalonPenerima::whereIn('id', $candidateIds)->update([
                     'status_verifikasi' => 'pending',
                 ]);
             }
+
+            PenerimaFinal::where('nama_dusun', $dusun->nama_dusun)->delete();
         });
 
         return back()->with('success', 'Hasil filterisasi dusun berhasil di-reset.');

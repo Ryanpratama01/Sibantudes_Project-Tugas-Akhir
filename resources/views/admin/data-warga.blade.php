@@ -49,6 +49,8 @@
         .btn-detail{background:#f3f4f6;color:#374151;}
         .btn-validasi{background:#eff6ff;color:#1d4ed8;}
         .btn-kirim{background:#fffbeb;color:#b45309;}
+        .btn-reset{display:inline-flex;align-items:center;gap:6px;padding:9px 14px;background:#ef4444;color:#fff;font-size:12px;font-weight:700;border:none;border-radius:11px;cursor:pointer;box-shadow:0 2px 8px rgba(239,68,68,.22);white-space:nowrap;}
+        .btn-reset:hover{filter:brightness(.95);}
 
         .info-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:10.5px;font-weight:700;background:#f8fafc;color:#475569;border:1px solid #e2e8f0;}
 
@@ -56,9 +58,10 @@
         .prob-bg{flex:1;height:5px;background:#f1f5f9;border-radius:99px;overflow:hidden;}
         .prob-bar{height:100%;border-radius:99px;}
 
+        /* ── MODAL FIX — scroll handled by .m-wrap, not .m-body ── */
         .m-backdrop{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.45);backdrop-filter:blur(3px);}
-        .m-wrap{position:fixed;inset:0;z-index:50;overflow-y:auto;pointer-events:none;display:flex;align-items:center;justify-content:center;padding:16px;}
-        .m-box{width:100%;max-width:620px;background:#fff;border-radius:22px;box-shadow:0 24px 64px rgba(0,0,0,.18);overflow:hidden;display:flex;flex-direction:column;max-height:90vh;pointer-events:auto;}
+        .m-wrap{position:fixed;inset:0;z-index:50;overflow-y:auto;pointer-events:none;display:flex;align-items:flex-start;justify-content:center;padding:24px 16px;}
+        .m-box{width:100%;max-width:620px;background:#fff;border-radius:22px;box-shadow:0 24px 64px rgba(0,0,0,.18);overflow:hidden;display:flex;flex-direction:column;pointer-events:auto;margin:auto;}
         .mhero{position:relative;overflow:hidden;padding:18px 22px;background:linear-gradient(135deg,#1e40af 0%,#2563eb 55%,#3b82f6 100%);}
         .mhero-b1{position:absolute;top:-20px;right:-20px;width:90px;height:90px;background:rgba(255,255,255,.08);border-radius:50%;}
         .mhero-b2{position:absolute;bottom:-22px;left:35%;width:70px;height:70px;background:rgba(255,255,255,.06);border-radius:50%;}
@@ -70,7 +73,7 @@
         .m-close:hover{background:rgba(255,255,255,.28);}
         .m-close svg{width:14px;height:14px;stroke:currentColor;}
         .m-st-pill{margin-top:10px;position:relative;display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:20px;background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.25);font-size:11px;font-weight:700;}
-        .m-body{overflow-y:auto;flex:1;padding:14px;background:#f8fafc;display:flex;flex-direction:column;gap:10px;}
+        .m-body{overflow-y:visible;flex:1;padding:14px;background:#f8fafc;display:flex;flex-direction:column;gap:10px;}
         .msec{background:#fff;border-radius:14px;border:1.5px solid #f1f5f9;overflow:hidden;}
         .msec-h{padding:8px 14px;border-bottom:1px solid #f1f5f9;background:#fafafa;display:flex;align-items:center;gap:7px;}
         .msec-h .bar{width:3px;height:13px;border-radius:3px;flex-shrink:0;}
@@ -105,21 +108,39 @@
             <div style="width:3px;height:14px;background:#2563eb;border-radius:4px;"></div>
             <h3 style="font-size:12px;font-weight:700;color:#374151;">Pencarian</h3>
         </div>
-        <form method="GET" action="{{ url()->current() }}" style="display:flex;gap:8px;align-items:center;">
-            <div class="sw" style="flex:1;">
+
+        <form method="GET" action="{{ url()->current() }}" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <div class="sw" style="flex:1;min-width:260px;">
                 <svg fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 <input type="text" name="q" value="{{ request('q') }}" placeholder="Cari NIK, Nama, atau Email...">
             </div>
+
             <button type="submit" style="display:inline-flex;align-items:center;gap:6px;padding:9px 16px;background:#2563eb;color:#fff;font-size:12px;font-weight:700;border:none;border-radius:11px;cursor:pointer;box-shadow:0 2px 8px rgba(37,99,235,.25);white-space:nowrap;">
                 <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 Cari
             </button>
+
             @if(request()->filled('q'))
                 <a href="{{ url()->current() }}" style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;background:#f3f4f6;border-radius:10px;color:#6b7280;text-decoration:none;" title="Hapus">
                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </a>
             @endif
         </form>
+
+        <div style="margin-top:12px;display:flex;justify-content:flex-end;">
+            <form method="POST"
+                  action="{{ route('admin.data-warga.bersihkan') }}"
+                  onsubmit="return confirm('Yakin ingin menghapus semua data warga aktif? Data pada laporan arsip tidak akan terhapus.');">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn-reset">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                    Bersihkan Data Warga
+                </button>
+            </form>
+        </div>
     </div>
 
     {{-- TABLE --}}
@@ -448,7 +469,8 @@
             set('d_nik',d.nik||'-');set('d_no_kk',d.no_kk||'-');set('d_nama',d.nama_lengkap||'-');
             set('d_jk',d.jenis_kelamin||'-');set('d_lahir',(d.tempat_lahir||'-')+', '+(d.tanggal_lahir||'-'));
             set('d_usia',d.usia?d.usia+' tahun':'-');set('d_kawin',d.status_perkawinan||'-');
-            set('d_alamat',d.alamat||'-');set('d_dusun',d.desa||'-');
+            set('d_alamat', d.alamat || '-');
+            set('d_dusun', d.dusun || '-');
             set('d_rt','RT '+String(d.rt||'-').padStart(3,'0'));set('d_aset',d.aset_kepemilikan||'-');
             set('d_pekerjaan',d.pekerjaan||'-');
             set('d_penghasilan','Rp '+Number(d.penghasilan||0).toLocaleString('id-ID'));

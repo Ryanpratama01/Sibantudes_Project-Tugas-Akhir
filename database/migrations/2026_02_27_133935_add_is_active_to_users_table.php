@@ -1,27 +1,22 @@
 <?php
 
-namespace App\Http\Middleware;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
-use Closure;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-
-class EnsureUserIsActive
+return new class extends Migration
 {
-    public function handle(Request $request, Closure $next)
+    public function up(): void
     {
-        $user = $request->user();
-
-        // kalau user login tapi nonaktif -> logout + balik ke login
-        if ($user && (int)($user->is_active ?? 1) === 0) {
-            Auth::logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-
-            return redirect()->route('login')
-                ->with('error', 'Akun kamu sudah dinonaktifkan oleh Admin.');
-        }
-
-        return $next($request);
+        Schema::table('users', function (Blueprint $table) {
+            $table->boolean('is_active')->default(false)->after('role');
+        });
     }
-}
+
+    public function down(): void
+    {
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn('is_active');
+        });
+    }
+};

@@ -7,17 +7,15 @@
 
         <title>{{ config('app.name', 'Laravel') }}</title>
 
-        <!-- Fonts -->
+        <link rel="icon" type="image/png" href="{{ asset('Lambang_Kabupaten_Pasuruan.png') }}">
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
-        <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="font-sans antialiased">
         <div class="min-h-screen bg-gray-100">
 
-            {{-- BAR TAB + PROFIL (sticky) --}}
             <div class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
                     <div class="flex items-center justify-between gap-4">
@@ -26,11 +24,9 @@
                             $role = Auth::user()->role ?? null;
                         @endphp
 
-                        {{-- TAB MENU (fullwidth) --}}
                         <div class="flex items-center gap-2 flex-1">
 
                             @if($role === 'admin')
-                                {{-- ADMIN MENU --}}
                                 <a href="{{ route('admin.dashboard') }}"
                                    class="flex-1 text-center px-4 py-2 rounded-xl text-sm font-medium border
                                    {{ request()->routeIs('admin.dashboard') ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50' }}">
@@ -62,7 +58,6 @@
                                 </a>
 
                             @else
-                                {{-- RT MENU (default) --}}
                                 <a href="{{ route('dashboard') }}"
                                    class="flex-1 text-center px-4 py-2 rounded-xl text-sm font-medium border
                                    {{ request()->routeIs('dashboard') ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50' }}">
@@ -71,26 +66,25 @@
 
                                 <a href="{{ route('rt.calon-penerima.create') }}"
                                    class="flex-1 text-center px-4 py-2 rounded-xl text-sm font-medium border
-                                   {{ request()->routeIs('calon-penerima.create') ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50' }}">
+                                   {{ request()->routeIs('rt.calon-penerima.create') ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50' }}">
                                     Pendataan
                                 </a>
 
                                 <a href="{{ route('rt.calon-penerima.index') }}"
                                    class="flex-1 text-center px-4 py-2 rounded-xl text-sm font-medium border
-                                   {{ request()->routeIs('calon-penerima.index') ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50' }}">
+                                   {{ request()->routeIs('rt.calon-penerima.index') ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50' }}">
                                     Riwayat
                                 </a>
 
-                                <a href="{{ route('rt.calon-penerima.index') }}"
+                                <a href="{{ route('rt.laporan.index') }}"
                                    class="flex-1 text-center px-4 py-2 rounded-xl text-sm font-medium border
-                                   {{ false ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50' }}">
-                                    Status Pengajuan
+                                   {{ request()->routeIs('rt.laporan.*') ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50' }}">
+                                    Laporan
                                 </a>
                             @endif
 
                         </div>
 
-                        {{-- PROFIL (kanan) --}}
                         <div class="flex items-center gap-3">
                             <div class="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
                                 <span class="text-sm font-semibold text-gray-700">
@@ -114,7 +108,6 @@
                 </div>
             </div>
 
-            <!-- Page Heading -->
             @isset($header)
                 <header class="bg-white shadow">
                     <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
@@ -123,7 +116,6 @@
                 </header>
             @endisset
 
-            <!-- Page Content -->
             <main>
                 <div class="py-8">
                     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
