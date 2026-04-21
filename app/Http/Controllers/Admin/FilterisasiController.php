@@ -91,14 +91,12 @@ class FilterisasiController extends Controller
             $topIds = $allCandidates->take($kuota)->pluck('id')->all();
             $allIds = $allCandidates->pluck('id')->all();
 
-            // Top kuota = disetujui
             if (!empty($topIds)) {
                 CalonPenerima::whereIn('id', $topIds)->update([
                     'status_verifikasi' => 'disetujui',
                 ]);
             }
 
-            // Sisanya = ditolak
             $notPickedIds = array_diff($allIds, $topIds);
 
             if (!empty($notPickedIds)) {
@@ -107,7 +105,6 @@ class FilterisasiController extends Controller
                 ]);
             }
 
-            // Ambil ulang data final setelah status diperbarui
             $finalCandidates = CalonPenerima::query()
                 ->with(['rt.dusun', 'prediksiKelayakan'])
                 ->whereIn('id', $allIds)
@@ -118,7 +115,7 @@ class FilterisasiController extends Controller
 
                 PenerimaFinal::updateOrCreate(
                     [
-                        'nik' => $candidate->nik,
+                        'nik'             => $candidate->nik,
                         'periode_bantuan' => '2026 Triwulan 1',
                     ],
                     [
@@ -131,6 +128,9 @@ class FilterisasiController extends Controller
                         'penghasilan'       => $candidate->penghasilan ?? 0,
                         'jumlah_tanggungan' => $candidate->jumlah_tanggungan ?? 0,
                         'aset_kepemilikan'  => $candidate->aset_kepemilikan ?? '-',
+                        'kondisi_rumah'     => $candidate->kondisi_rumah ?? 'Tidak Diketahui',
+                        'meteran_listrik'   => $candidate->meteran_listrik ?? 'Tidak Diketahui',
+                        'sumber_air'        => $candidate->sumber_air ?? 'Tidak Diketahui',
                         'bantuan_lain'      => $candidate->bantuan_lain ?? 'tidak',
                         'usia'              => $candidate->usia ?? 0,
                         'probability'       => $probability,

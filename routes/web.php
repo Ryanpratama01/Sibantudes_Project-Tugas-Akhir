@@ -18,12 +18,32 @@ use App\Http\Controllers\Rt\DashboardController as RtDashboardController;
 use App\Http\Controllers\Rt\CalonPenerimaController as RtCalonPenerimaController;
 use App\Http\Controllers\Rt\LaporanController as RtLaporanController;
 
+// Manual Password Reset
+use App\Http\Controllers\Auth\ManualPasswordResetController;
+
 /*
 |--------------------------------------------------------------------------
 | ROOT / LANDING PAGE PUBLIK
 |--------------------------------------------------------------------------
 */
 Route::get('/', [LandingPageController::class, 'index'])->name('landing');
+
+/*
+|--------------------------------------------------------------------------
+| MANUAL PASSWORD RESET (guest only)
+|--------------------------------------------------------------------------
+*/
+Route::get('/forgot-password', [ManualPasswordResetController::class, 'showForm'])
+    ->middleware('guest')
+    ->name('password.request');
+
+Route::post('/password/manual/check', [ManualPasswordResetController::class, 'checkEmail'])
+    ->middleware('guest')
+    ->name('password.manual.check');
+
+Route::post('/password/manual/update', [ManualPasswordResetController::class, 'updatePassword'])
+    ->middleware('guest')
+    ->name('password.manual.update');
 
 /*
 |--------------------------------------------------------------------------

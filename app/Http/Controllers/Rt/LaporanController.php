@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Rt;
 
 use App\Http\Controllers\Controller;
 use App\Models\PenerimaFinal;
-use App\Models\Rt;
+use App\Models\RT;
 use Illuminate\Http\Request;
 
 class LaporanController extends Controller
@@ -17,7 +17,7 @@ class LaporanController extends Controller
             abort(403, 'Akses ditolak: hanya RT.');
         }
 
-        $rt = Rt::with('dusun')->find($user->rt_id);
+        $rt = RT::with('dusun')->find($user->rt_id);
 
         if (!$rt) {
             $laporans = collect();

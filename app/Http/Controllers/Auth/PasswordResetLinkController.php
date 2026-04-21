@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class PasswordResetLinkController extends Controller
@@ -27,6 +28,10 @@ class PasswordResetLinkController extends Controller
     {
         $request->validate([
             'email' => ['required', 'email'],
+        ]);
+
+        Log::info('TES RESET PASSWORD MASUK', [
+            'email' => $request->email,
         ]);
 
         // We will send the password reset link to this user. Once we have attempted

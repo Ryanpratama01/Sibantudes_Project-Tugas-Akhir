@@ -1,21 +1,21 @@
 <x-app-layout>
     <x-slot name="header">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:16px;">
-            <div style="display:flex; align-items:center; gap:12px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:10px; min-width:0;">
                 <a href="{{ route('rt.calon-penerima.index') }}"
-                   style="width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:10px; background:#fff; border:1.5px solid #e5e7eb; color:#6b7280; text-decoration:none;">
+                   style="width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:10px; background:#fff; border:1.5px solid #e5e7eb; color:#6b7280; text-decoration:none; flex-shrink:0;">
                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                     </svg>
                 </a>
-                <div>
-                    <h2 style="font-size:17px; font-weight:800; color:#111827; line-height:1.2;">Detail Calon Penerima</h2>
+                <div style="min-width:0;">
+                    <h2 style="font-size:16px; font-weight:800; color:#111827; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Detail Calon Penerima</h2>
                     <p style="font-size:11px; color:#9ca3af; margin-top:2px;">Data pendataan warga &amp; hasil prediksi kelayakan</p>
                 </div>
             </div>
             @if(($calonPenerima->tracking_status ?? 'draft') === 'draft')
                 <a href="{{ route('rt.calon-penerima.edit', $calonPenerima->id) }}"
-                   style="display:inline-flex; align-items:center; gap:6px; padding:7px 14px; background:#2563eb; color:#fff; font-size:12px; font-weight:700; border-radius:10px; text-decoration:none; box-shadow:0 2px 8px rgba(37,99,235,.25);">
+                   style="display:inline-flex; align-items:center; gap:6px; padding:7px 14px; background:#2563eb; color:#fff; font-size:12px; font-weight:700; border-radius:10px; text-decoration:none; box-shadow:0 2px 8px rgba(37,99,235,.25); flex-shrink:0;">
                     <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                     </svg>
@@ -26,31 +26,96 @@
     </x-slot>
 
     <style>
+        /* ── CARDS ── */
         .sp-card{background:#fff;border-radius:16px;border:1.5px solid #f1f5f9;box-shadow:0 1px 3px rgba(0,0,0,.04);overflow:hidden;}
         .sp-head{padding:9px 16px;border-bottom:1px solid #f1f5f9;background:#fafafa;display:flex;align-items:center;gap:8px;}
         .sp-head .bar{width:3px;height:14px;border-radius:4px;flex-shrink:0;}
         .sp-head h3{font-size:10.5px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.07em;}
         .sp-body{padding:13px 16px;}
+
+        /* ── LABELS / VALUES ── */
         .lbl{font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px;}
         .val{font-size:12.5px;font-weight:600;color:#111827;}
+
+        /* ── GRIDS ── */
         .g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+        .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
         .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+
+        /* ── PILLS ── */
         .pill{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:20px;font-size:11px;font-weight:700;}
         .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+
+        /* ── FEATURE LIST ── */
         .fl{list-style:none;padding:0;margin:0;}
         .fl li{display:flex;align-items:flex-start;gap:5px;font-size:11.5px;line-height:1.5;margin-bottom:2px;}
         .fi{width:13px;height:13px;flex-shrink:0;margin-top:1px;}
+
+        /* ── ACCORDION ── */
         details.acc>summary{list-style:none;display:flex;justify-content:space-between;align-items:center;padding:9px 16px;cursor:pointer;background:#f9fafb;border-top:1px solid #f1f5f9;font-size:11px;font-weight:700;color:#374151;user-select:none;}
         details.acc>summary::-webkit-details-marker{display:none;}
         details.acc>summary .chev{transition:transform .2s;}
         details.acc[open]>summary .chev{transform:rotate(180deg);}
         details.acc .ab{padding:12px 16px;display:flex;flex-direction:column;gap:9px;}
+
+        /* ── TRACKING ── */
         .trk-wrap{display:flex;flex-direction:column;gap:10px;}
         .trk-step{display:flex;align-items:flex-start;gap:10px;}
         .trk-point{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:800;}
         .trk-line{width:2px;height:18px;margin-left:10px;border-radius:999px;background:#e5e7eb;}
-        @media(max-width:1024px){.mg{grid-template-columns:1fr!important;}.g4{grid-template-columns:1fr 1fr!important;}}
-        @media(max-width:600px){.g2,.g4{grid-template-columns:1fr!important;}}
+
+        /* ── MAIN GRID (2-col di desktop, 1-col di tablet/mobile) ── */
+        .mg{display:grid;grid-template-columns:1fr 310px;gap:12px;align-items:start;}
+        @media(max-width:1024px){
+            .mg{grid-template-columns:1fr;}
+        }
+
+        /* ── INNER GRIDS ── */
+        @media(max-width:860px){
+            .g4{grid-template-columns:1fr 1fr;}
+            .g3{grid-template-columns:1fr 1fr;}
+        }
+        /* Di bawah 540px: semua jadi 1 kolom kecuali .g2 tetap 2 */
+        @media(max-width:540px){
+            .g3,.g4{grid-template-columns:1fr;}
+        }
+        @media(max-width:420px){
+            .g2{grid-template-columns:1fr;}
+        }
+
+        /* ── BANNER ── */
+        .bnr-inner{display:flex;align-items:center;gap:14px;flex-wrap:nowrap;}
+        .bnr-mid{flex:1;min-width:0;}
+        .bnr-right{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+
+        @media(max-width:540px){
+            .bnr-inner{flex-wrap:wrap;gap:10px;}
+            .bnr-right{
+                width:100%;
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+                gap:8px;
+                flex-wrap:wrap;
+            }
+            .bnr-prob-num{font-size:22px!important;}
+        }
+
+        /* ── STATUS ROW ── */
+        .st-row{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px;}
+        .st-dates{display:flex;gap:18px;flex-wrap:wrap;}
+
+        @media(max-width:480px){
+            .st-dates{flex-direction:column;gap:8px;}
+        }
+
+        /* ── FOTO GRID: max 2 kolom di mobile ── */
+        @media(max-width:540px){
+            .foto-g{grid-template-columns:1fr 1fr!important;}
+        }
+        @media(max-width:360px){
+            .foto-g{grid-template-columns:1fr!important;}
+        }
     </style>
 
     @php
@@ -82,7 +147,6 @@
         };
     @endphp
 
-    {{-- FLASH --}}
     @if(session('success'))
         <div style="display:flex;align-items:center;gap:9px;background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:12px;padding:9px 14px;margin-bottom:10px;font-size:12px;color:#166534;font-weight:500;">
             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -96,53 +160,57 @@
         </div>
     @endif
 
-    {{-- BANNER --}}
-    <div style="position:relative;overflow:hidden;background:linear-gradient(135deg,#1e40af 0%,#2563eb 55%,#3b82f6 100%);border-radius:18px;padding:16px 20px;margin-bottom:12px;display:flex;align-items:center;gap:14px;box-shadow:0 6px 20px rgba(37,99,235,.22);">
+    {{-- ══ BANNER ══ --}}
+    <div style="position:relative;overflow:hidden;background:linear-gradient(135deg,#1e40af 0%,#2563eb 55%,#3b82f6 100%);border-radius:18px;padding:16px 20px;margin-bottom:12px;box-shadow:0 6px 20px rgba(37,99,235,.22);">
         <div style="position:absolute;top:-24px;right:-24px;width:110px;height:110px;background:rgba(255,255,255,.08);border-radius:50%;pointer-events:none;"></div>
         <div style="position:absolute;bottom:-28px;left:42%;width:80px;height:80px;background:rgba(255,255,255,.06);border-radius:50%;pointer-events:none;"></div>
 
-        <div style="width:46px;height:46px;border-radius:13px;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#fff;flex-shrink:0;">
-            {{ strtoupper(substr($calonPenerima->nama_lengkap ?? 'U', 0, 1)) }}
-        </div>
-
-        <div style="flex:1;min-width:0;">
-            <h3 style="font-size:16px;font-weight:900;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;">{{ $calonPenerima->nama_lengkap ?? '-' }}</h3>
-            <p style="font-size:11px;color:rgba(191,219,254,.85);font-family:monospace;margin-top:2px;">NIK: {{ $calonPenerima->nik ?? '-' }}</p>
-            <div style="margin-top:6px;">
-                <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.15);color:#fff;font-size:10.5px;font-weight:700;border:1px solid rgba(255,255,255,.22);">
-                    <span style="width:6px;height:6px;border-radius:50%;background:#fff;opacity:.9;"></span>
-                    {{ $trackingLabel }}
-                </span>
+        <div class="bnr-inner">
+            {{-- Avatar --}}
+            <div style="width:46px;height:46px;border-radius:13px;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#fff;flex-shrink:0;">
+                {{ strtoupper(substr($calonPenerima->nama_lengkap ?? 'U', 0, 1)) }}
             </div>
-        </div>
 
-        <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;">
-            @if($probPct !== null)
-                <div style="text-align:right;">
-                    <div style="font-size:26px;font-weight:900;color:#fff;line-height:1;">{{ number_format($probPct,0) }}<span style="font-size:13px;color:rgba(191,219,254,.7);">%</span></div>
-                    <div style="font-size:10px;color:rgba(191,219,254,.6);margin-top:1px;">probabilitas</div>
+            {{-- Nama + NIK + status --}}
+            <div class="bnr-mid">
+                <h3 style="font-size:15px;font-weight:900;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2;">{{ $calonPenerima->nama_lengkap ?? '-' }}</h3>
+                <p style="font-size:11px;color:rgba(191,219,254,.85);font-family:monospace;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">NIK: {{ $calonPenerima->nik ?? '-' }}</p>
+                <div style="margin-top:6px;">
+                    <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.15);color:#fff;font-size:10.5px;font-weight:700;border:1px solid rgba(255,255,255,.22);">
+                        <span style="width:6px;height:6px;border-radius:50%;background:#fff;opacity:.9;"></span>
+                        {{ $trackingLabel }}
+                    </span>
                 </div>
-            @endif
+            </div>
 
-            @if($tracking === 'selesai')
-                @if($st === 'disetujui')
-                    <span class="pill" style="background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;"><span class="dot" style="background:#22c55e;"></span>Diterima</span>
-                @elseif($st === 'ditolak')
-                    <span class="pill" style="background:#fff1f2;color:#9f1239;border:1px solid #fecdd3;"><span class="dot" style="background:#f43f5e;"></span>Tidak Diterima</span>
-                @else
-                    <span class="pill" style="background:#fffbeb;color:#b45309;border:1px solid #fde68a;"><span class="dot" style="background:#f59e0b;"></span>Menunggu Hasil</span>
+            {{-- Probabilitas + pill status --}}
+            <div class="bnr-right">
+                @if($probPct !== null)
+                    <div style="text-align:right;">
+                        <div class="bnr-prob-num" style="font-size:26px;font-weight:900;color:#fff;line-height:1;">{{ number_format($probPct,0) }}<span style="font-size:13px;color:rgba(191,219,254,.7);">%</span></div>
+                        <div style="font-size:10px;color:rgba(191,219,254,.6);margin-top:1px;">probabilitas</div>
+                    </div>
                 @endif
-            @else
-                <span class="pill" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;"><span class="dot" style="background:#3b82f6;"></span>{{ $trackingLabel }}</span>
-            @endif
+                @if($tracking === 'selesai')
+                    @if($st === 'disetujui')
+                        <span class="pill" style="background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;"><span class="dot" style="background:#22c55e;"></span>Diterima</span>
+                    @elseif($st === 'ditolak')
+                        <span class="pill" style="background:#fff1f2;color:#9f1239;border:1px solid #fecdd3;"><span class="dot" style="background:#f43f5e;"></span>Tidak Diterima</span>
+                    @else
+                        <span class="pill" style="background:#fffbeb;color:#b45309;border:1px solid #fde68a;"><span class="dot" style="background:#f59e0b;"></span>Menunggu Hasil</span>
+                    @endif
+                @else
+                    <span class="pill" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;"><span class="dot" style="background:#3b82f6;"></span>{{ $trackingLabel }}</span>
+                @endif
+            </div>
         </div>
     </div>
 
-    {{-- MAIN GRID --}}
-    <div class="mg" style="display:grid;grid-template-columns:1fr 310px;gap:12px;align-items:start;">
+    {{-- ══ MAIN GRID ══ --}}
+    <div class="mg">
 
-        {{-- KIRI --}}
-        <div style="display:flex;flex-direction:column;gap:12px;">
+        {{-- ── KIRI ── --}}
+        <div style="display:flex;flex-direction:column;gap:12px;min-width:0;">
 
             <div class="g2">
                 {{-- Identitas --}}
@@ -150,7 +218,7 @@
                     <div class="sp-head"><div class="bar" style="background:#2563eb;"></div><h3>Identitas</h3></div>
                     <div class="sp-body">
                         <div class="g2">
-                            <div><p class="lbl">No. KK</p><p class="val" style="font-family:monospace;font-size:11px;">{{ $calonPenerima->no_kk ?? '-' }}</p></div>
+                            <div><p class="lbl">No. KK</p><p class="val" style="font-family:monospace;font-size:11px;word-break:break-all;">{{ $calonPenerima->no_kk ?? '-' }}</p></div>
                             <div><p class="lbl">Jenis Kelamin</p><p class="val">{{ $calonPenerima->jenis_kelamin ?? '-' }}</p></div>
                             <div><p class="lbl">Tempat Lahir</p><p class="val">{{ $calonPenerima->tempat_lahir ?? '-' }}</p></div>
                             <div><p class="lbl">Tanggal Lahir</p><p class="val">{{ $calonPenerima->tanggal_lahir ? \Carbon\Carbon::parse($calonPenerima->tanggal_lahir)->translatedFormat('d F Y') : '-' }}</p></div>
@@ -173,6 +241,11 @@
                             </div>
                         </div>
                         <div><p class="lbl">Aset Kepemilikan</p><p class="val">{{ $calonPenerima->aset_kepemilikan ?? '-' }}</p></div>
+                        <div class="g3">
+                            <div><p class="lbl">Kondisi Rumah</p><p class="val">{{ $calonPenerima->kondisi_rumah ?? '-' }}</p></div>
+                            <div><p class="lbl">Meteran Listrik</p><p class="val">{{ $calonPenerima->meteran_listrik ?? '-' }}</p></div>
+                            <div><p class="lbl">Sumber Air</p><p class="val">{{ $calonPenerima->sumber_air ?? '-' }}</p></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -197,7 +270,56 @@
                 </div>
             </div>
 
-            {{-- Tracking Pengajuan --}}
+            {{-- Dokumen & Foto --}}
+            @php
+                $fotoFields = [
+                    'foto_rumah_depan'      => 'Foto Rumah Depan',
+                    'foto_rumah_belakang'   => 'Foto Rumah Belakang',
+                    'foto_rumah_kanan'      => 'Foto Rumah Kanan',
+                    'foto_rumah_kiri'       => 'Foto Rumah Kiri',
+                    'foto_kk'               => 'Foto KK',
+                    'foto_ktp'              => 'Foto KTP',
+                    'foto_rekening_listrik' => 'Rekening Listrik',
+                    'foto_meteran_air'      => 'Foto Meteran Air',
+                    'dokumen_pendukung'     => 'Dokumen Pendukung',
+                ];
+                $adaFoto = false;
+                foreach($fotoFields as $field => $label) {
+                    if($calonPenerima->$field) { $adaFoto = true; break; }
+                }
+            @endphp
+            @if($adaFoto)
+                <div class="sp-card">
+                    <div class="sp-head"><div class="bar" style="background:#e11d48;"></div><h3>Dokumen & Foto</h3></div>
+                    <div class="sp-body">
+                        <div class="foto-g" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+                            @foreach($fotoFields as $field => $label)
+                                @if($calonPenerima->$field)
+                                    <div>
+                                        <p class="lbl" style="margin-bottom:5px;">{{ $label }}</p>
+                                        @php $ext = pathinfo($calonPenerima->$field, PATHINFO_EXTENSION); @endphp
+                                        @if(in_array(strtolower($ext), ['jpg','jpeg','png','gif','webp']))
+                                            <a href="{{ Storage::url($calonPenerima->$field) }}" target="_blank">
+                                                <img src="{{ Storage::url($calonPenerima->$field) }}"
+                                                     alt="{{ $label }}"
+                                                     style="width:100%;height:80px;object-fit:cover;border-radius:10px;border:1.5px solid #e5e7eb;">
+                                            </a>
+                                        @else
+                                            <a href="{{ Storage::url($calonPenerima->$field) }}" target="_blank"
+                                               style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:#eff6ff;color:#2563eb;font-size:11px;font-weight:700;border-radius:8px;text-decoration:none;border:1px solid #bfdbfe;">
+                                                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5l2 2h5a2 2 0 012 2v7"/></svg>
+                                                Lihat File
+                                            </a>
+                                        @endif
+                                    </div>
+                                @endif
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            {{-- Tracking --}}
             <div class="sp-card">
                 <div class="sp-head"><div class="bar" style="background:#6b7280;"></div><h3>Tracking Pengajuan</h3></div>
                 <div class="sp-body">
@@ -210,7 +332,6 @@
                             </div>
                         </div>
                         <div class="trk-line"></div>
-
                         <div class="trk-step">
                             <div class="trk-point" style="{{ in_array($tracking, ['terkirim','sedang_validasi','selesai']) ? 'background:#dbeafe;color:#1d4ed8;' : 'background:#f3f4f6;color:#9ca3af;' }}">2</div>
                             <div>
@@ -225,7 +346,6 @@
                             </div>
                         </div>
                         <div class="trk-line"></div>
-
                         <div class="trk-step">
                             <div class="trk-point" style="{{ in_array($tracking, ['sedang_validasi','selesai']) ? 'background:#fef3c7;color:#b45309;' : 'background:#f3f4f6;color:#9ca3af;' }}">3</div>
                             <div>
@@ -240,7 +360,6 @@
                             </div>
                         </div>
                         <div class="trk-line"></div>
-
                         <div class="trk-step">
                             <div class="trk-point" style="{{ $tracking === 'selesai' ? 'background:#dcfce7;color:#166534;' : 'background:#f3f4f6;color:#9ca3af;' }}">4</div>
                             <div>
@@ -261,40 +380,42 @@
             {{-- Status Pengajuan --}}
             <div class="sp-card">
                 <div class="sp-head"><div class="bar" style="background:#6b7280;"></div><h3>Status Pengajuan</h3></div>
-                <div class="sp-body" style="display:flex;flex-wrap:wrap;align-items:center;gap:14px;">
-                    @if($tracking === 'draft')
-                        <span class="pill" style="background:#f3f4f6;color:#6b7280;border:1px solid #e5e7eb;"><span class="dot" style="background:#9ca3af;"></span>Draft</span>
-                    @elseif($tracking === 'terkirim')
-                        <span class="pill" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;"><span class="dot" style="background:#3b82f6;"></span>Terkirim ke Kelurahan</span>
-                    @elseif($tracking === 'sedang_validasi')
-                        <span class="pill" style="background:#fffbeb;color:#b45309;border:1px solid #fde68a;"><span class="dot" style="background:#f59e0b;"></span>Sedang Divalidasi</span>
-                    @elseif($tracking === 'selesai')
-                        @if($st === 'disetujui')
-                            <span class="pill" style="background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;"><span class="dot" style="background:#22c55e;"></span>Diterima</span>
-                        @elseif($st === 'ditolak')
-                            <span class="pill" style="background:#fff1f2;color:#9f1239;border:1px solid #fecdd3;"><span class="dot" style="background:#f43f5e;"></span>Tidak Diterima</span>
-                        @else
-                            <span class="pill" style="background:#fffbeb;color:#b45309;border:1px solid #fde68a;"><span class="dot" style="background:#f59e0b;"></span>Menunggu Hasil</span>
+                <div class="sp-body">
+                    <div class="st-row">
+                        @if($tracking === 'draft')
+                            <span class="pill" style="background:#f3f4f6;color:#6b7280;border:1px solid #e5e7eb;"><span class="dot" style="background:#9ca3af;"></span>Draft</span>
+                        @elseif($tracking === 'terkirim')
+                            <span class="pill" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;"><span class="dot" style="background:#3b82f6;"></span>Terkirim ke Kelurahan</span>
+                        @elseif($tracking === 'sedang_validasi')
+                            <span class="pill" style="background:#fffbeb;color:#b45309;border:1px solid #fde68a;"><span class="dot" style="background:#f59e0b;"></span>Sedang Divalidasi</span>
+                        @elseif($tracking === 'selesai')
+                            @if($st === 'disetujui')
+                                <span class="pill" style="background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;"><span class="dot" style="background:#22c55e;"></span>Diterima</span>
+                            @elseif($st === 'ditolak')
+                                <span class="pill" style="background:#fff1f2;color:#9f1239;border:1px solid #fecdd3;"><span class="dot" style="background:#f43f5e;"></span>Tidak Diterima</span>
+                            @else
+                                <span class="pill" style="background:#fffbeb;color:#b45309;border:1px solid #fde68a;"><span class="dot" style="background:#f59e0b;"></span>Menunggu Hasil</span>
+                            @endif
                         @endif
-                    @endif
 
-                    <div style="display:flex;gap:18px;">
-                        <div><p class="lbl">Dibuat</p><p class="val">{{ $calonPenerima->created_at ? \Carbon\Carbon::parse($calonPenerima->created_at)->translatedFormat('d M Y, H:i') : '-' }}</p></div>
-                        <div><p class="lbl">Diperbarui</p><p class="val">{{ $calonPenerima->updated_at ? \Carbon\Carbon::parse($calonPenerima->updated_at)->translatedFormat('d M Y, H:i') : '-' }}</p></div>
-                    </div>
-
-                    @if(!empty($calonPenerima->catatan_admin))
-                        <div style="flex:1;min-width:160px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:7px 11px;font-size:11.5px;color:#6b7280;">
-                            <strong style="color:#374151;">Catatan: </strong>{{ $calonPenerima->catatan_admin }}
+                        <div class="st-dates">
+                            <div><p class="lbl">Dibuat</p><p class="val">{{ $calonPenerima->created_at ? \Carbon\Carbon::parse($calonPenerima->created_at)->translatedFormat('d M Y, H:i') : '-' }}</p></div>
+                            <div><p class="lbl">Diperbarui</p><p class="val">{{ $calonPenerima->updated_at ? \Carbon\Carbon::parse($calonPenerima->updated_at)->translatedFormat('d M Y, H:i') : '-' }}</p></div>
                         </div>
-                    @endif
+
+                        @if(!empty($calonPenerima->catatan_admin))
+                            <div style="flex:1;min-width:0;width:100%;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:7px 11px;font-size:11.5px;color:#6b7280;">
+                                <strong style="color:#374151;">Catatan: </strong>{{ $calonPenerima->catatan_admin }}
+                            </div>
+                        @endif
+                    </div>
                 </div>
             </div>
 
-        </div>
+        </div>{{-- end kiri --}}
 
-        {{-- KANAN --}}
-        <div style="display:flex;flex-direction:column;gap:12px;">
+        {{-- ── KANAN (sidebar) ── --}}
+        <div style="display:flex;flex-direction:column;gap:12px;min-width:0;">
 
             {{-- Prediksi --}}
             <div class="sp-card">
@@ -311,7 +432,7 @@
                                     {{ number_format($probPct,0) }}<span style="font-size:9px;color:#9ca3af;">%</span>
                                 </div>
                             </div>
-                            <div style="flex:1;">
+                            <div style="flex:1;min-width:0;">
                                 <p class="lbl" style="margin-bottom:4px;">Rekomendasi</p>
                                 <span style="{{ $recBg }}display:inline-block;padding:3px 10px;border-radius:8px;font-size:11.5px;font-weight:700;">{{ $rec }}</span>
                                 <div style="margin-top:7px;height:4px;background:#f1f5f9;border-radius:99px;overflow:hidden;">
@@ -338,8 +459,18 @@
                             <summary>Penjelasan Lengkap <svg class="chev" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></summary>
                             <div class="ab">
                                 <div style="display:flex;flex-direction:column;gap:5px;">
-                                    @foreach(['Pekerjaan'=>$calonPenerima->pekerjaan??'-','Penghasilan'=>'Rp '.number_format((float)($calonPenerima->penghasilan??0),0,',','.'),'Tanggungan'=>($calonPenerima->jumlah_tanggungan??'-').' orang','Aset'=>$calonPenerima->aset_kepemilikan??'-','Bantuan Lain'=>ucfirst($calonPenerima->bantuan_lain??'-'),'Usia'=>($calonPenerima->usia??'-').' tahun'] as $lbl=>$val)
-                                        <div style="display:flex;justify-content:space-between;gap:8px;font-size:11px;"><span style="color:#9ca3af;">{{ $lbl }}</span><span style="font-weight:600;color:#374151;text-align:right;">{{ $val }}</span></div>
+                                    @foreach([
+                                        'Pekerjaan'      => $calonPenerima->pekerjaan??'-',
+                                        'Penghasilan'    => 'Rp '.number_format((float)($calonPenerima->penghasilan??0),0,',','.'),
+                                        'Tanggungan'     => ($calonPenerima->jumlah_tanggungan??'-').' orang',
+                                        'Aset'           => $calonPenerima->aset_kepemilikan??'-',
+                                        'Bantuan Lain'   => ucfirst($calonPenerima->bantuan_lain??'-'),
+                                        'Usia'           => ($calonPenerima->usia??'-').' tahun',
+                                        'Kondisi Rumah'  => $calonPenerima->kondisi_rumah??'-',
+                                        'Meteran Listrik'=> $calonPenerima->meteran_listrik??'-',
+                                        'Sumber Air'     => $calonPenerima->sumber_air??'-',
+                                    ] as $lbl=>$val)
+                                        <div style="display:flex;justify-content:space-between;gap:8px;font-size:11px;"><span style="color:#9ca3af;">{{ $lbl }}</span><span style="font-weight:600;color:#374151;text-align:right;word-break:break-word;">{{ $val }}</span></div>
                                     @endforeach
                                 </div>
                                 @if(!empty($explanation['positive']))
@@ -415,7 +546,8 @@
                 </div>
             @endif
 
-        </div>
-    </div>
+        </div>{{-- end kanan --}}
+
+    </div>{{-- end .mg --}}
 
 </x-app-layout>

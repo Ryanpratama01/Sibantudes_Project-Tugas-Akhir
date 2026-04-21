@@ -1,0 +1,21 @@
+[08-Apr-2026 16:30:23 UTC] PHP Fatal error:  Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.3.0". You are running 8.2.30. in /home/tamyhost/public_html/E31232406/vendor/composer/platform_check.php on line 26
+[08-Apr-2026 17:03:37 UTC] PHP Fatal error:  Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.3.0". You are running 8.2.30. in /home/tamyhost/public_html/E31232406/vendor/composer/platform_check.php on line 26
+[08-Apr-2026 17:06:51 UTC] PHP Fatal error:  Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.3.0". You are running 8.2.30. in /home/tamyhost/public_html/E31232406/vendor/composer/platform_check.php on line 26
+[08-Apr-2026 17:42:39 UTC] PHP Warning:  require(/home/tamyhost/public_html/E31232406/../vendor/autoload.php): Failed to open stream: No such file or directory in /home/tamyhost/public_html/E31232406/index.php on line 14
+[08-Apr-2026 17:42:39 UTC] PHP Warning:  require(/home/tamyhost/public_html/E31232406/../vendor/autoload.php): Failed to open stream: No such file or directory in /home/tamyhost/public_html/E31232406/index.php on line 14
+[08-Apr-2026 17:42:39 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/tamyhost/public_html/E31232406/../vendor/autoload.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home/tamyhost/public_html/E31232406/index.php:14
+Stack trace:
+#0 {main}
+  thrown in /home/tamyhost/public_html/E31232406/index.php on line 14
+[08-Apr-2026 17:42:42 UTC] PHP Warning:  require(/home/tamyhost/public_html/E31232406/../vendor/autoload.php): Failed to open stream: No such file or directory in /home/tamyhost/public_html/E31232406/index.php on line 14
+[08-Apr-2026 17:42:42 UTC] PHP Warning:  require(/home/tamyhost/public_html/E31232406/../vendor/autoload.php): Failed to open stream: No such file or directory in /home/tamyhost/public_html/E31232406/index.php on line 14
+[08-Apr-2026 17:42:42 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/tamyhost/public_html/E31232406/../vendor/autoload.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home/tamyhost/public_html/E31232406/index.php:14
+Stack trace:
+#0 {main}
+  thrown in /home/tamyhost/public_html/E31232406/index.php on line 14
+[08-Apr-2026 17:42:43 UTC] PHP Warning:  require(/home/tamyhost/public_html/E31232406/../vendor/autoload.php): Failed to open stream: No such file or directory in /home/tamyhost/public_html/E31232406/index.php on line 14
+[08-Apr-2026 17:42:43 UTC] PHP Warning:  require(/home/tamyhost/public_html/E31232406/../vendor/autoload.php): Failed to open stream: No such file or directory in /home/tamyhost/public_html/E31232406/index.php on line 14
+[08-Apr-2026 17:42:43 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/tamyhost/public_html/E31232406/../vendor/autoload.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home/tamyhost/public_html/E31232406/index.php:14
+Stack trace:
+#0 {main}
+  thrown in /home/tamyhost/public_html/E31232406/index.php on line 14

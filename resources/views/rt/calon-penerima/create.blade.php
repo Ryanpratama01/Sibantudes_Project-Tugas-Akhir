@@ -6,7 +6,22 @@
         </div>
     </x-slot>
 
-    {{-- TAMPILKAN ERROR VALIDASI --}}
+    <style>
+        .input-field { font-size: 16px !important; }
+        @media (min-width: 640px) { .input-field { font-size: 14px !important; } }
+
+        @media (max-width: 480px) {
+            .action-row { flex-direction: column-reverse !important; }
+            .action-row a,
+            .action-row button { width: 100%; justify-content: center; text-align: center; }
+        }
+
+        @media (max-width: 640px) {
+            .section-body { padding: 14px 14px !important; }
+            .section-head { padding: 10px 14px !important; }
+        }
+    </style>
+
     @if ($errors->any())
         <div class="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             <div class="font-semibold mb-2">Gagal menyimpan:</div>
@@ -18,31 +33,29 @@
         </div>
     @endif
 
-    {{-- TAMPILKAN ERROR DARI TRY-CATCH CONTROLLER --}}
     @if (session('error'))
         <div class="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             {{ session('error') }}
         </div>
     @endif
 
-    {{-- TAMPILKAN SUCCESS --}}
     @if (session('success'))
         <div class="mb-4 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-700">
             {{ session('success') }}
         </div>
     @endif
 
-    <form action="{{ route('rt.calon-penerima.store') }}" method="POST" id="formPendataan" novalidate>
+    <form action="{{ route('rt.calon-penerima.store') }}" method="POST" id="formPendataan" novalidate enctype="multipart/form-data">
         @csrf
 
         {{-- SECTION 1: Data Identitas --}}
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 mb-4 overflow-hidden">
-            <div class="px-5 py-3 border-b border-gray-100 flex items-center gap-2 bg-gray-50">
+            <div class="section-head px-5 py-3 border-b border-gray-100 flex items-center gap-2 bg-gray-50">
                 <div class="w-1 h-4 bg-blue-600 rounded-full"></div>
                 <h3 class="text-sm font-semibold text-gray-700">Data Identitas</h3>
             </div>
 
-            <div class="p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="section-body p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 @php
                     $myRtId = auth()->user()->rt_id ?? (auth()->user()->rt->id ?? null);
                 @endphp
@@ -51,8 +64,6 @@
                     <label class="block text-xs font-semibold text-gray-600 mb-1">
                         RT <span class="text-red-500">*</span>
                     </label>
-
-                    {{-- tampilkan tapi terkunci --}}
                     <select
                         id="rt_id_display"
                         class="input-field w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-100"
@@ -67,136 +78,87 @@
                             </option>
                         @endforeach
                     </select>
-
-                    {{-- yang dikirim --}}
                     <input type="hidden" name="rt_id" id="rt_id" value="{{ $myRtId }}">
-
                     <p class="error-msg text-xs text-red-500 mt-1 hidden">RT wajib dipilih.</p>
                 </div>
 
-                {{-- NO KK --}}
                 <div class="field-group">
                     <label class="block text-xs font-semibold text-gray-600 mb-1">
                         No. KK <span class="text-red-500">*</span>
                     </label>
-                    <input
-                        type="text"
-                        name="no_kk"
-                        id="no_kk"
-                        maxlength="16"
+                    <input type="text" name="no_kk" id="no_kk" maxlength="16"
                         class="input-field w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
-                        placeholder="16 digit No. KK"
-                        required
-                    >
+                        placeholder="16 digit No. KK" required inputmode="numeric">
                     <p class="error-msg text-xs text-red-500 mt-1 hidden">No. KK harus 16 digit angka.</p>
                 </div>
 
-                {{-- NIK --}}
                 <div class="field-group">
                     <label class="block text-xs font-semibold text-gray-600 mb-1">
                         NIK <span class="text-red-500">*</span>
                     </label>
-                    <input
-                        type="text"
-                        name="nik"
-                        id="nik"
-                        maxlength="16"
+                    <input type="text" name="nik" id="nik" maxlength="16"
                         class="input-field w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
-                        placeholder="16 digit NIK"
-                        required
-                    >
+                        placeholder="16 digit NIK" required inputmode="numeric">
                     <p class="error-msg text-xs text-red-500 mt-1 hidden">NIK harus tepat 16 digit angka.</p>
                 </div>
 
-                {{-- NAMA --}}
                 <div class="field-group">
                     <label class="block text-xs font-semibold text-gray-600 mb-1">
                         Nama Lengkap <span class="text-red-500">*</span>
                     </label>
-                    <input
-                        type="text"
-                        name="nama_lengkap"
-                        id="nama_lengkap"
+                    <input type="text" name="nama_lengkap" id="nama_lengkap"
                         class="input-field w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
-                        placeholder="Nama sesuai KTP"
-                        required
-                    >
+                        placeholder="Nama sesuai KTP" required>
                     <p class="error-msg text-xs text-red-500 mt-1 hidden">Nama lengkap wajib diisi.</p>
                 </div>
 
-                {{-- JENIS KELAMIN --}}
                 <div class="field-group">
                     <label class="block text-xs font-semibold text-gray-600 mb-1">
                         Jenis Kelamin <span class="text-red-500">*</span>
                     </label>
-                    <select
-                        name="jenis_kelamin"
-                        class="input-field w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
-                    >
+                    <select name="jenis_kelamin"
+                        class="input-field w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50">
                         <option value="Laki-laki">Laki-laki</option>
                         <option value="Perempuan">Perempuan</option>
                     </select>
                 </div>
 
-                {{-- TEMPAT LAHIR --}}
                 <div class="field-group">
                     <label class="block text-xs font-semibold text-gray-600 mb-1">
                         Tempat Lahir <span class="text-red-500">*</span>
                     </label>
-                    <input
-                        type="text"
-                        name="tempat_lahir"
-                        id="tempat_lahir"
+                    <input type="text" name="tempat_lahir" id="tempat_lahir"
                         class="input-field w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
-                        placeholder="Kota/Kabupaten"
-                        required
-                    >
+                        placeholder="Kota/Kabupaten" required>
                     <p class="error-msg text-xs text-red-500 mt-1 hidden">Tempat lahir wajib diisi.</p>
                 </div>
 
-                {{-- TANGGAL LAHIR --}}
                 <div class="field-group">
                     <label class="block text-xs font-semibold text-gray-600 mb-1">
                         Tanggal Lahir <span class="text-red-500">*</span>
                     </label>
-                    <input
-                        type="date"
-                        name="tanggal_lahir"
-                        id="tanggal_lahir"
+                    <input type="date" name="tanggal_lahir" id="tanggal_lahir"
                         class="input-field w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
-                        required
-                    >
+                        required>
                     <p class="error-msg text-xs text-red-500 mt-1 hidden">Tanggal lahir wajib diisi.</p>
                 </div>
 
-                {{-- USIA --}}
                 <div class="field-group">
                     <label class="block text-xs font-semibold text-gray-600 mb-1">
                         Usia <span class="text-red-500">*</span>
                     </label>
-                    <input
-                        type="number"
-                        name="usia"
-                        id="usia"
-                        min="0"
-                        max="150"
+                    <input type="number" name="usia" id="usia" min="0" max="150"
                         class="input-field w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
-                        placeholder="Otomatis dari tanggal lahir"
-                        required
-                    >
+                        placeholder="Otomatis dari tanggal lahir" required inputmode="numeric">
                     <p class="error-msg text-xs text-red-500 mt-1 hidden">Usia harus antara 0–150 tahun.</p>
                 </div>
 
-                {{-- STATUS PERKAWINAN --}}
                 <div class="field-group">
                     <label class="block text-xs font-semibold text-gray-600 mb-1">
                         Status Perkawinan <span class="text-red-500">*</span>
                     </label>
-                    <select
-                        name="status_perkawinan"
-                        id="status_perkawinan"
-                        class="input-field w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
-                    >
+                    <select name="status_perkawinan" id="status_perkawinan"
+                        class="input-field w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50">
                         <option value="">-- Pilih --</option>
                         <option value="Belum Kawin">Belum Kawin</option>
                         <option value="Kawin">Kawin</option>
@@ -210,25 +172,19 @@
 
         {{-- SECTION 2: Data Tempat Tinggal --}}
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 mb-4 overflow-hidden">
-            <div class="px-5 py-3 border-b border-gray-100 flex items-center gap-2 bg-gray-50">
+            <div class="section-head px-5 py-3 border-b border-gray-100 flex items-center gap-2 bg-gray-50">
                 <div class="w-1 h-4 bg-emerald-500 rounded-full"></div>
                 <h3 class="text-sm font-semibold text-gray-700">Data Tempat Tinggal</h3>
             </div>
 
-            <div class="p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {{-- ALAMAT --}}
+            <div class="section-body p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div class="field-group lg:col-span-2">
                     <label class="block text-xs font-semibold text-gray-600 mb-1">
                         Alamat <span class="text-red-500">*</span>
                     </label>
-                    <input
-                        type="text"
-                        name="alamat"
-                        id="alamat"
+                    <input type="text" name="alamat" id="alamat"
                         class="input-field w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
-                        placeholder="Jalan, nomor rumah, RT/RW"
-                        required
-                    >
+                        placeholder="Jalan, nomor rumah, RT/RW" required>
                     <p class="error-msg text-xs text-red-500 mt-1 hidden">Alamat wajib diisi.</p>
                 </div>
 
@@ -240,108 +196,69 @@
                     <label class="block text-xs font-semibold text-gray-600 mb-1">
                         Dusun <span class="text-red-500">*</span>
                     </label>
-
-                    {{-- tampilkan tapi terkunci --}}
-                    <input
-                        type="text"
-                        id="desa_display"
+                    <input type="text" id="desa_display"
                         class="input-field w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-100"
-                        value="{{ $myDusunName }}"
-                        readonly
-                    >
-
-                    {{-- yang dikirim --}}
+                        value="{{ $myDusunName }}" readonly>
                     <input type="hidden" name="desa" id="desa" value="{{ $myDusunName }}">
-
                     <p class="error-msg text-xs text-red-500 mt-1 hidden">Dusun wajib diisi.</p>
                 </div>
 
-                {{-- ASET --}}
                 <div class="field-group">
                     <label class="block text-xs font-semibold text-gray-600 mb-1">
                         Aset Kepemilikan <span class="text-red-500">*</span>
                     </label>
-                    <input
-                        type="text"
-                        name="aset_kepemilikan"
-                        id="aset_kepemilikan"
+                    <input type="text" name="aset_kepemilikan" id="aset_kepemilikan"
                         class="input-field w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
-                        placeholder="Misal: Rumah, Motor, dll"
-                        required
-                    >
+                        placeholder="Misal: Rumah, Motor, dll" required>
                     <p class="error-msg text-xs text-red-500 mt-1 hidden">Aset kepemilikan wajib diisi.</p>
                 </div>
             </div>
         </div>
 
         {{-- SECTION 3: Data Ekonomi --}}
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 mb-5 overflow-hidden">
-            <div class="px-5 py-3 border-b border-gray-100 flex items-center gap-2 bg-gray-50">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 mb-4 overflow-hidden">
+            <div class="section-head px-5 py-3 border-b border-gray-100 flex items-center gap-2 bg-gray-50">
                 <div class="w-1 h-4 bg-amber-500 rounded-full"></div>
                 <h3 class="text-sm font-semibold text-gray-700">Data Ekonomi</h3>
             </div>
 
-            <div class="p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {{-- PEKERJAAN --}}
+            <div class="section-body p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div class="field-group">
                     <label class="block text-xs font-semibold text-gray-600 mb-1">
                         Pekerjaan <span class="text-red-500">*</span>
                     </label>
-                    <input
-                        type="text"
-                        name="pekerjaan"
-                        id="pekerjaan"
+                    <input type="text" name="pekerjaan" id="pekerjaan"
                         class="input-field w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
-                        placeholder="Jenis pekerjaan"
-                        required
-                    >
+                        placeholder="Jenis pekerjaan" required>
                     <p class="error-msg text-xs text-red-500 mt-1 hidden">Pekerjaan wajib diisi.</p>
                 </div>
 
-                {{-- PENGHASILAN --}}
                 <div class="field-group">
                     <label class="block text-xs font-semibold text-gray-600 mb-1">
                         Penghasilan (Rp) <span class="text-red-500">*</span>
                     </label>
-                    <input
-                        type="number"
-                        step="0.01"
-                        name="penghasilan"
-                        id="penghasilan"
-                        min="0"
+                    <input type="number" step="0.01" name="penghasilan" id="penghasilan" min="0"
                         class="input-field w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
-                        placeholder="0"
-                        required
-                    >
+                        placeholder="0" required inputmode="decimal">
                     <p class="error-msg text-xs text-red-500 mt-1 hidden">Penghasilan tidak boleh negatif.</p>
                 </div>
 
-                {{-- JUMLAH TANGGUNGAN --}}
                 <div class="field-group">
                     <label class="block text-xs font-semibold text-gray-600 mb-1">
                         Jumlah Tanggungan <span class="text-red-500">*</span>
                     </label>
-                    <input
-                        type="number"
-                        name="jumlah_tanggungan"
-                        id="jumlah_tanggungan"
-                        min="0"
+                    <input type="number" name="jumlah_tanggungan" id="jumlah_tanggungan" min="0"
                         class="input-field w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
-                        placeholder="Jumlah orang"
-                        required
-                    >
+                        placeholder="Jumlah orang" required inputmode="numeric">
                     <p class="error-msg text-xs text-red-500 mt-1 hidden">Jumlah tanggungan tidak boleh negatif.</p>
                 </div>
 
-                {{-- BANTUAN LAIN --}}
                 <div class="field-group">
                     <label class="block text-xs font-semibold text-gray-600 mb-1">
                         Menerima Bantuan Lain? <span class="text-red-500">*</span>
                     </label>
-                    <select
-                        name="bantuan_lain"
-                        class="input-field w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
-                    >
+                    <select name="bantuan_lain"
+                        class="input-field w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50">
                         <option value="tidak">Tidak</option>
                         <option value="ya">Ya</option>
                     </select>
@@ -349,18 +266,112 @@
             </div>
         </div>
 
+        {{-- SECTION 4: Kondisi Tempat Tinggal --}}
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 mb-4 overflow-hidden">
+            <div class="section-head px-5 py-3 border-b border-gray-100 flex items-center gap-2 bg-gray-50">
+                <div class="w-1 h-4 bg-purple-500 rounded-full"></div>
+                <h3 class="text-sm font-semibold text-gray-700">Kondisi Tempat Tinggal</h3>
+            </div>
+            <div class="section-body p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="field-group">
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">
+                        Kondisi Rumah <span class="text-red-500">*</span>
+                    </label>
+                    <select name="kondisi_rumah" id="kondisi_rumah"
+                        class="input-field w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50">
+                        <option value="Layak">Layak</option>
+                        <option value="Sedang">Sedang</option>
+                        <option value="Tidak Layak">Tidak Layak</option>
+                    </select>
+                </div>
+                <div class="field-group">
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">
+                        Meteran Listrik <span class="text-red-500">*</span>
+                    </label>
+                    <select name="meteran_listrik" id="meteran_listrik"
+                        class="input-field w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50">
+                        <option value="450VA">450VA</option>
+                        <option value="900VA">900VA</option>
+                        <option value="1300VA+">1300VA+</option>
+                    </select>
+                </div>
+                <div class="field-group">
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">
+                        Sumber Air <span class="text-red-500">*</span>
+                    </label>
+                    <select name="sumber_air" id="sumber_air"
+                        class="input-field w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50">
+                        <option value="PDAM">PDAM</option>
+                        <option value="Sumur">Sumur</option>
+                        <option value="Sungai">Sungai</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        {{-- SECTION 5: Upload Dokumen & Foto --}}
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 mb-5 overflow-hidden">
+            <div class="section-head px-5 py-3 border-b border-gray-100 flex items-center gap-2 bg-gray-50">
+                <div class="w-1 h-4 bg-rose-500 rounded-full"></div>
+                <h3 class="text-sm font-semibold text-gray-700">Upload Dokumen & Foto</h3>
+            </div>
+            <div class="section-body p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="field-group">
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Foto Rumah Depan</label>
+                    <input type="file" name="foto_rumah_depan" accept="image/*"
+                        class="input-field w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-gray-50">
+                </div>
+                <div class="field-group">
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Foto Rumah Belakang</label>
+                    <input type="file" name="foto_rumah_belakang" accept="image/*"
+                        class="input-field w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-gray-50">
+                </div>
+                <div class="field-group">
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Foto Rumah Kanan</label>
+                    <input type="file" name="foto_rumah_kanan" accept="image/*"
+                        class="input-field w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-gray-50">
+                </div>
+                <div class="field-group">
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Foto Rumah Kiri</label>
+                    <input type="file" name="foto_rumah_kiri" accept="image/*"
+                        class="input-field w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-gray-50">
+                </div>
+                <div class="field-group">
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Foto KK</label>
+                    <input type="file" name="foto_kk" accept="image/*"
+                        class="input-field w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-gray-50">
+                </div>
+                <div class="field-group">
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Foto KTP</label>
+                    <input type="file" name="foto_ktp" accept="image/*"
+                        class="input-field w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-gray-50">
+                </div>
+                <div class="field-group">
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Foto Rekening Listrik</label>
+                    <input type="file" name="foto_rekening_listrik" accept="image/*,.pdf"
+                        class="input-field w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-gray-50">
+                </div>
+                <div class="field-group">
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Foto Meteran Air</label>
+                    <input type="file" name="foto_meteran_air" accept="image/*"
+                        class="input-field w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-gray-50">
+                </div>
+                <div class="field-group lg:col-span-2">
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Dokumen Pendukung Lainnya</label>
+                    <input type="file" name="dokumen_pendukung" accept="image/*,.pdf,.doc,.docx"
+                        class="input-field w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-gray-50">
+                </div>
+            </div>
+        </div>
+
         {{-- ACTIONS --}}
-        <div class="flex justify-end gap-3">
-            <a
-                href="{{ route('rt.calon-penerima.index') }}"
-                class="px-5 py-2 text-sm font-medium bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 transition"
-            >
+        <div class="action-row flex justify-end gap-3">
+            <a href="{{ route('rt.calon-penerima.index') }}"
+                class="px-5 py-2 text-sm font-medium bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 transition">
                 Batal
             </a>
-            <button
-                type="submit"
-                class="px-6 py-2 text-sm font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition shadow-md shadow-blue-200"
-            >
+            <button type="submit"
+                class="px-6 py-2 text-sm font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition shadow-md shadow-blue-200">
                 Simpan Data
             </button>
         </div>
@@ -431,7 +442,6 @@
             });
         });
 
-        // Auto-isi usia dari tanggal lahir
         document.getElementById('tanggal_lahir')?.addEventListener('change', function () {
             const dob = new Date(this.value);
             const today = new Date();
@@ -444,7 +454,6 @@
             }
         });
 
-        // Submit validation
         document.getElementById('formPendataan').addEventListener('submit', function (e) {
             let valid = true;
             Object.keys(rules).forEach(id => {

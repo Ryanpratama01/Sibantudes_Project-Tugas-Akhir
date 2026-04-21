@@ -20,6 +20,9 @@ class PenerimaFinal extends Model
         'penghasilan',
         'jumlah_tanggungan',
         'aset_kepemilikan',
+        'kondisi_rumah',
+        'meteran_listrik',
+        'sumber_air',
         'bantuan_lain',
         'usia',
         'probability',
@@ -31,10 +34,10 @@ class PenerimaFinal extends Model
 
     protected $casts = [
         'tanggal_penetapan' => 'date',
-        'jumlah_bantuan' => 'decimal:2',
-        'probability' => 'decimal:4',
-        'penghasilan' => 'integer',
+        'jumlah_bantuan'    => 'decimal:2',
+        'probability'       => 'decimal:4',
+        'penghasilan'       => 'integer',
         'jumlah_tanggungan' => 'integer',
-        'usia' => 'integer',
+        'usia'              => 'integer',
     ];
 }

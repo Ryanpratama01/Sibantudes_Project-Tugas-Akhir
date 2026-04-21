@@ -6,16 +6,16 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
-       public function up(): void
+    public function up(): void
     {
         Schema::create('prediksi_kelayakans', function (Blueprint $table) {
             $table->id();
             $table->foreignId('calon_penerima_id')->constrained('calon_penerimas')->onDelete('cascade');
-            $table->decimal('probability', 5, 2); // Probabilitas kelayakan (0-100)
-            $table->string('recommendation'); // Sangat Layak, Layak, Kurang Layak
+            $table->decimal('probability', 5, 2);
+            $table->string('recommendation');
+            $table->string('kondisi_rumah')->default('Tidak Diketahui');
+            $table->string('meteran_listrik')->default('Tidak Diketahui');
+            $table->string('sumber_air')->default('Tidak Diketahui');
             $table->timestamps();
         });
     }

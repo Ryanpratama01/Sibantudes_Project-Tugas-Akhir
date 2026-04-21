@@ -3,80 +3,49 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
 
 class MLPredictionService
 {
-    /**
-     * Dapatkan prediksi dari script Python langsung
-     */
     public function getPrediction(array $data)
     {
         try {
             $payload = [
-                'pekerjaan' => $data['pekerjaan'] ?? '',
-                'penghasilan' => (float) ($data['penghasilan'] ?? 0),
-                'jumlah_tanggungan' => (int) ($data['jumlah_tanggungan'] ?? 0),
-                'aset_kepemilikan' => $data['aset_kepemilikan'] ?? '',
-                'bantuan_lain' => $data['bantuan_lain'] ?? '',
-                'usia' => (int) ($data['usia'] ?? 0),
+                'pekerjaan'          => $data['pekerjaan'] ?? '',
+                'penghasilan'        => (float) ($data['penghasilan'] ?? 0),
+                'jumlah_tanggungan'  => (int) ($data['jumlah_tanggungan'] ?? 0),
+                'aset_kepemilikan'   => $data['aset_kepemilikan'] ?? '',
+                'bantuan_lain'       => $data['bantuan_lain'] ?? '',
+                'usia'               => (int) ($data['usia'] ?? 0),
+                'kondisi_rumah'      => $data['kondisi_rumah'] ?? 'Tidak Diketahui',
+                'meteran_listrik'    => $data['meteran_listrik'] ?? 'Tidak Diketahui',
+                'sumber_air'         => $data['sumber_air'] ?? 'Tidak Diketahui',
             ];
 
-            $jsonPayload = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            $apiUrl = env('ML_API_URL', 'https://ianvv.pythonanywhere.com') . '/predict';
 
-            $pythonPath = 'python';
-            $scriptPath = base_path('ml/predict.py');
+            $response = Http::timeout(30)->post($apiUrl, $payload);
 
-            $descriptorspec = [
-                0 => ['pipe', 'r'], // stdin
-                1 => ['pipe', 'w'], // stdout
-                2 => ['pipe', 'w'], // stderr
-            ];
-
-            $process = proc_open(
-                $pythonPath . ' ' . escapeshellarg($scriptPath),
-                $descriptorspec,
-                $pipes,
-                base_path()
-            );
-
-            if (!is_resource($process)) {
-                Log::error('Gagal menjalankan proses Python ML.');
-                return null;
-            }
-
-            fwrite($pipes[0], $jsonPayload);
-            fclose($pipes[0]);
-
-            $output = stream_get_contents($pipes[1]);
-            fclose($pipes[1]);
-
-            $errorOutput = stream_get_contents($pipes[2]);
-            fclose($pipes[2]);
-
-            $exitCode = proc_close($process);
-
-            if ($exitCode !== 0) {
-                Log::error('Python ML exit code bukan 0.', [
-                    'exit_code' => $exitCode,
-                    'stderr' => $errorOutput,
-                    'stdout' => $output,
+            if (!$response->successful()) {
+                Log::error('ML API gagal.', [
+                    'status' => $response->status(),
+                    'body'   => $response->body(),
                 ]);
                 return null;
             }
 
-            $result = json_decode($output, true);
+            $result = $response->json();
 
             if (!$result || isset($result['error'])) {
                 Log::error('Hasil prediksi ML tidak valid.', [
-                    'output' => $output,
-                    'stderr' => $errorOutput,
+                    'output'  => $response->body(),
                     'decoded' => $result,
                 ]);
                 return null;
             }
 
             return [
-                'probability' => $result['probability'] ?? 0,
+                'probability'    => $result['probability'] ?? 0,
                 'recommendation' => $result['recommendation'] ?? 'Tidak Layak',
             ];
         } catch (\Throwable $e) {
@@ -85,60 +54,30 @@ class MLPredictionService
         }
     }
 
-    /**
-     * Cek apakah script ML bisa dijalankan
-     */
     public function healthCheck()
     {
         try {
-            $pythonPath = 'python';
-            $scriptPath = base_path('ml/predict.py');
+            $apiUrl = env('ML_API_URL', 'https://ianvv.pythonanywhere.com') . '/predict';
 
-            if (!file_exists($scriptPath)) {
-                return false;
-            }
-
-            $testPayload = json_encode([
-                'pekerjaan' => 'buruh',
-                'penghasilan' => 500000,
-                'jumlah_tanggungan' => 4,
-                'aset_kepemilikan' => 'motor',
-                'bantuan_lain' => 'tidak',
-                'usia' => 50,
-            ]);
-
-            $descriptorspec = [
-                0 => ['pipe', 'r'],
-                1 => ['pipe', 'w'],
-                2 => ['pipe', 'w'],
+            $testPayload = [
+                'pekerjaan'          => 'Buruh Harian',
+                'penghasilan'        => 500000,
+                'jumlah_tanggungan'  => 4,
+                'aset_kepemilikan'   => 'Rumah Sederhana',
+                'bantuan_lain'       => 'tidak',
+                'usia'               => 50,
+                'kondisi_rumah'      => 'Tidak Layak',
+                'meteran_listrik'    => '450VA',
+                'sumber_air'         => 'Sumur',
             ];
 
-            $process = proc_open(
-                $pythonPath . ' ' . escapeshellarg($scriptPath),
-                $descriptorspec,
-                $pipes,
-                base_path()
-            );
+            $response = Http::timeout(10)->post($apiUrl, $testPayload);
 
-            if (!is_resource($process)) {
+            if (!$response->successful()) {
                 return false;
             }
 
-            fwrite($pipes[0], $testPayload);
-            fclose($pipes[0]);
-
-            $output = stream_get_contents($pipes[1]);
-            fclose($pipes[1]);
-
-            fclose($pipes[2]);
-
-            $exitCode = proc_close($process);
-
-            if ($exitCode !== 0) {
-                return false;
-            }
-
-            $result = json_decode($output, true);
+            $result = $response->json();
 
             return is_array($result) && isset($result['probability']) && isset($result['recommendation']);
         } catch (\Throwable $e) {
@@ -146,17 +85,12 @@ class MLPredictionService
         }
     }
 
-    /**
-     * Prediksi untuk banyak data sekaligus
-     */
     public function getBatchPredictions(array $dataArray)
     {
         $results = [];
-
         foreach ($dataArray as $item) {
             $results[] = $this->getPrediction($item);
         }
-
         return $results;
     }
 }
