@@ -437,7 +437,7 @@
                               d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
                     </svg>
-                    Kelurahan Ngerong
+                    Desa Ngerong
                 </div>
 
                 <div class="left-caption">
@@ -486,7 +486,7 @@
         </a>
 
         <div class="form-head">
-            <div class="form-eyebrow">BLT-DD &bull; Kelurahan Ngerong</div>
+            <div class="form-eyebrow">BLT-DD &bull; Desa Ngerong</div>
             <div class="form-title">Selamat Datang</div>
             <div class="form-sub">Masuk dengan akun yang telah terdaftar</div>
         </div>
@@ -543,7 +543,7 @@
                 <label for="remember">Ingat saya di perangkat ini</label>
             </div>
 
-            <button type="submit" class="btn-submit">Masuk ke Sistem</button>
+            <button type="submit" class="btn-submit" id="btn-login" onclick="handleLogin(this)">Masuk ke Sistem</button>
         </form>
 
         <div class="reg-row">
@@ -573,7 +573,50 @@ function togglePw() {
         ico.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>`;
     }
 }
+
+function handleLogin(btn) {
+    /* validasi sederhana sebelum submit */
+    var email = document.getElementById('email').value.trim();
+    var pass  = document.getElementById('password').value;
+    if (!email || !pass) return; /* biarkan browser handle required */
+
+    /* ubah tombol jadi loading state */
+    btn.disabled = true;
+    btn.innerHTML =
+        '<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" ' +
+        'style="animation:spin .8s linear infinite;flex-shrink:0;">' +
+        '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" ' +
+        'd="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581' +
+        'm0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>' +
+        ' Sedang masuk...';
+    btn.style.display = 'inline-flex';
+    btn.style.alignItems = 'center';
+    btn.style.justifyContent = 'center';
+    btn.style.gap = '8px';
+
+    /* submit form */
+    btn.closest('form').submit();
+}
+
+/* re-enable tombol jika user balik (bfcache / back button) */
+window.addEventListener('pageshow', function(e) {
+    if (e.persisted) {
+        var btn = document.getElementById('btn-login');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = 'Masuk ke Sistem';
+            btn.style.display = '';
+            btn.style.alignItems = '';
+            btn.style.justifyContent = '';
+            btn.style.gap = '';
+        }
+    }
+});
 </script>
+
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
 
 </body>
 </html>

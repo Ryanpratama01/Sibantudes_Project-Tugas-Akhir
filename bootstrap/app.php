@@ -16,6 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'is_active' => \App\Http\Middleware\EnsureUserIsActive::class,
         ]);
 
+        $middleware->web(append: [
+            \App\Http\Middleware\AutoArsipMiddleware::class,
+        ]);
+
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

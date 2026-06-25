@@ -4,7 +4,7 @@
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
             <div>
                 <h2 style="font-size:16px;font-weight:800;color:#0f172a;letter-spacing:-.02em;">Laporan Hasil Kelayakan</h2>
-                <p style="font-size:11px;color:#94a3b8;margin-top:2px;">Data hasil akhir verifikasi warga yang telah dikirim admin kelurahan</p>
+                <p style="font-size:11px;color:#94a3b8;margin-top:2px;">Data hasil akhir verifikasi warga yang telah dikirim admin perangkat desa</p>
             </div>
         </div>
     </x-slot>
@@ -272,7 +272,7 @@
         @endforelse
         </div>
 
-        <div class="tbl-foot"><span class="credit">SiBantuDes · Kelurahan Ngerong</span></div>
+        <div class="tbl-foot"><span class="credit">SiBantuDes · Desa Ngerong</span></div>
     </div>
 
 </x-app-layout>

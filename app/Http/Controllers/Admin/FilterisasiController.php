@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CalonPenerima;
 use App\Models\Dusun;
 use App\Models\PenerimaFinal;
+use App\Models\PeriodeDanaBlt;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -37,6 +38,7 @@ class FilterisasiController extends Controller
             $query = CalonPenerima::query()
                 ->with(['rt.dusun', 'prediksiKelayakan'])
                 ->whereIn('tracking_status', ['sedang_validasi', 'selesai'])
+                ->where('status_verifikasi', '!=', 'ditolak')
                 ->whereHas('rt', function ($q) use ($dusunId) {
                     $q->where('dusun_id', $dusunId);
                 });
@@ -54,7 +56,59 @@ class FilterisasiController extends Controller
                 ->pluck('nik');
         }
 
-        return view('admin.filterisasi', compact('dusuns', 'dusunId', 'kuota', 'candidates', 'pickedNiks'));
+        // Ambil riwayat periode dana
+        $periodeDana    = PeriodeDanaBlt::orderBy('id')->get();
+        $periodeTerakhir = $periodeDana->last();
+        $nextPeriodeNum  = $periodeDana->count() + 1;
+        $danaSisaTerakhir = $periodeTerakhir ? $periodeTerakhir->dana_sisa : null;
+
+        return view('admin.filterisasi', compact(
+            'dusuns', 'dusunId', 'kuota', 'candidates', 'pickedNiks',
+            'periodeDana', 'periodeTerakhir', 'nextPeriodeNum', 'danaSisaTerakhir'
+        ));
+    }
+
+    public function simpanPeriode(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user || $user->role !== 'admin') {
+            abort(403, 'Akses ditolak: hanya Admin.');
+        }
+
+        $data = $request->validate([
+            'periode'          => 'required|string|max:50',
+            'dana_awal'        => 'required|integer|min:1',
+            'jumlah_penerima'  => 'required|integer|min:1',
+            'keterangan'       => 'nullable|string|max:255',
+        ]);
+
+        $danaTerpakai = $data['jumlah_penerima'] * 300000;
+        $danaSisa     = $data['dana_awal'] - $danaTerpakai;
+
+        PeriodeDanaBlt::create([
+            'periode'         => $data['periode'],
+            'dana_awal'       => $data['dana_awal'],
+            'jumlah_penerima' => $data['jumlah_penerima'],
+            'dana_terpakai'   => $danaTerpakai,
+            'dana_sisa'       => max(0, $danaSisa),
+            'keterangan'      => $data['keterangan'] ?? null,
+        ]);
+
+        return back()->with('success', "Periode {$data['periode']} berhasil disimpan. Sisa dana: Rp " . number_format(max(0, $danaSisa), 0, ',', '.'));
+    }
+
+    public function hapusPeriode(Request $request, $id)
+    {
+        $user = $request->user();
+
+        if (!$user || $user->role !== 'admin') {
+            abort(403, 'Akses ditolak: hanya Admin.');
+        }
+
+        PeriodeDanaBlt::findOrFail($id)->delete();
+
+        return back()->with('success', 'Data periode berhasil dihapus.');
     }
 
     public function tetapkan(Request $request)
@@ -79,6 +133,7 @@ class FilterisasiController extends Controller
             $allCandidates = CalonPenerima::query()
                 ->with(['rt.dusun', 'prediksiKelayakan'])
                 ->whereIn('tracking_status', ['sedang_validasi', 'selesai'])
+                ->where('status_verifikasi', '!=', 'ditolak')
                 ->whereHas('rt', function ($r) use ($dusunId) {
                     $r->where('dusun_id', $dusunId);
                 })
@@ -166,6 +221,7 @@ class FilterisasiController extends Controller
                     $r->where('dusun_id', $dusun->id);
                 })
                 ->whereIn('tracking_status', ['sedang_validasi', 'selesai'])
+                ->where('status_verifikasi', '!=', 'ditolak')
                 ->pluck('id')
                 ->all();
 

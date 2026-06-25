@@ -48,45 +48,56 @@
         .recent-item:hover{background:#f0f7ff;}
         .recent-item:last-child{border-bottom:none;}
 
-        /* ── STAT GRID ── */
-        .rt-stat-grid{
-            display:grid;
-            grid-template-columns:repeat(4,1fr);
-            gap:12px;
-        }
-        @media(max-width:860px){
-            .rt-stat-grid{grid-template-columns:repeat(2,1fr);}
-        }
-        @media(max-width:380px){
-            .rt-stat-grid{grid-template-columns:1fr;}
-        }
+        .rt-stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+        @media(max-width:860px){.rt-stat-grid{grid-template-columns:repeat(2,1fr);}}
 
-        /* ── MAIN GRID ── */
-        .rt-main-grid{
-            display:grid;
-            grid-template-columns:2fr 1fr;
-            gap:14px;
-            align-items:start;
-        }
-        @media(max-width:1024px){
-            .rt-main-grid{grid-template-columns:1fr;}
-        }
+        .rt-main-grid{display:grid;grid-template-columns:2fr 1fr;gap:14px;align-items:start;}
+        @media(max-width:1024px){.rt-main-grid{grid-template-columns:1fr;}}
 
-        /* recent-item wrap di layar kecil */
         @media(max-width:480px){
             .recent-item{flex-wrap:wrap;gap:6px;}
             .recent-item-right{width:100%;display:flex;justify-content:flex-end;}
         }
+        @media(max-width:500px){#live-clock{font-size:10px;}}
 
-        /* clock kecil di mobile */
-        @media(max-width:500px){
-            #live-clock{font-size:10px;}
+        @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(.85);}}
+
+        /* ── ALUR BANNER ── */
+        .alur-banner{background:linear-gradient(135deg,#1e40af,#2563eb);border-radius:18px;padding:16px;box-shadow:0 6px 24px rgba(37,99,235,.3);position:relative;overflow:hidden;}
+        .alur-banner::before{content:'';position:absolute;top:-30px;right:-30px;width:120px;height:120px;background:rgba(255,255,255,.06);border-radius:50%;}
+        .alur-banner::after{content:'';position:absolute;bottom:-20px;right:60px;width:80px;height:80px;background:rgba(255,255,255,.04);border-radius:50%;}
+
+        .alur-title{font-size:13px;font-weight:900;color:#fff;margin-bottom:12px;display:flex;align-items:center;gap:7px;}
+        .alur-title svg{width:16px;height:16px;stroke:#93c5fd;flex-shrink:0;}
+
+        /* DESKTOP: flex 1 baris */
+        .alur-steps-wrap{display:flex;align-items:stretch;position:relative;z-index:1;}
+        .alur-arrow-wrap{display:flex;align-items:center;padding:0 5px;flex-shrink:0;}
+        .alur-arrow-wrap svg{width:16px;height:16px;stroke:rgba(255,255,255,.4);}
+        .alur-step-box{flex:1;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 8px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:5px;}
+
+        .alur-step-num{width:22px;height:22px;border-radius:50%;background:#fff;color:#1e40af;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+        .alur-step-icon{width:34px;height:34px;background:rgba(255,255,255,.15);border-radius:9px;display:flex;align-items:center;justify-content:center;}
+        .alur-step-icon svg{width:17px;height:17px;stroke:#fff;}
+        .alur-step-label{font-size:11.5px;font-weight:800;color:#fff;line-height:1.3;}
+        .alur-step-sub{font-size:10px;color:rgba(191,219,254,.85);line-height:1.4;}
+
+        /* MOBILE: grid 2x2, panah disembunyikan */
+        @media(max-width:640px){
+            .alur-banner{padding:13px 12px;}
+            .alur-title{font-size:11px;margin-bottom:10px;}
+            .alur-steps-wrap{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+            .alur-arrow-wrap{display:none;}
+            .alur-step-box{flex:none;padding:10px 7px;gap:4px;border-radius:10px;}
+            .alur-step-num{width:19px;height:19px;font-size:10px;}
+            .alur-step-icon{width:28px;height:28px;border-radius:7px;}
+            .alur-step-icon svg{width:14px;height:14px;}
+            .alur-step-label{font-size:10.5px;}
+            .alur-step-sub{font-size:9px;color:rgba(191,219,254,.8);}
         }
 
-        @keyframes pulse{
-            0%,100%{opacity:1;transform:scale(1);}
-            50%{opacity:.5;transform:scale(.85);}
-        }
+        .alur-step-box.active{background:rgba(255,255,255,.22);border-color:rgba(255,255,255,.5);box-shadow:0 0 0 2px rgba(255,255,255,.25);}
+        .alur-step-box.done{background:rgba(16,185,129,.25);border-color:rgba(167,243,208,.4);}
     </style>
 
     <div style="display:flex;flex-direction:column;gap:14px;">
@@ -102,9 +113,67 @@
             </div>
         </div>
 
+        {{-- ── BANNER ALUR PENDATAAN ── --}}
+        <div class="alur-banner">
+            <div class="alur-title">
+                <svg fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z"/></svg>
+                Panduan: Cara Mendaftarkan &amp; Melihat Hasil Warga
+            </div>
+            <div class="alur-steps-wrap">
+
+                <div class="alur-step-box">
+                    <div class="alur-step-num">1</div>
+                    <div class="alur-step-icon">
+                        <svg fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+                    </div>
+                    <div class="alur-step-label">Input Data Warga</div>
+                    <div class="alur-step-sub">Klik "Pendataan" lalu "Tambah Data" untuk mendaftarkan warga</div>
+                </div>
+
+                <div class="alur-arrow-wrap">
+                    <svg fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </div>
+
+                <div class="alur-step-box">
+                    <div class="alur-step-num">2</div>
+                    <div class="alur-step-icon">
+                        <svg fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    </div>
+                    <div class="alur-step-label">Cek Detail Warga</div>
+                    <div class="alur-step-sub">Klik tombol "Detail" pada data warga untuk melihat informasi lengkap</div>
+                </div>
+
+                <div class="alur-arrow-wrap">
+                    <svg fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </div>
+
+                <div class="alur-step-box">
+                    <div class="alur-step-num">3</div>
+                    <div class="alur-step-icon">
+                        <svg fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <div class="alur-step-label">Ajukan ke perangkat desa</div>
+                    <div class="alur-step-sub">Jika data sudah benar, klik "Ajukan" untuk dikirim ke admin perangkat desa</div>
+                </div>
+
+                <div class="alur-arrow-wrap">
+                    <svg fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </div>
+
+                <div class="alur-step-box">
+                    <div class="alur-step-num">4</div>
+                    <div class="alur-step-icon">
+                        <svg fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                    </div>
+                    <div class="alur-step-label">Lihat Hasil di Laporan</div>
+                    <div class="alur-step-sub">Hasil akhir Diterima / Ditolak bisa dilihat di menu "Laporan"</div>
+                </div>
+
+            </div>
+        </div>
+
         {{-- STAT CARDS --}}
         <div class="rt-stat-grid">
-
             @php
                 $rtCards = [
                     ['label'=>'Total Warga','val'=>$stats['total_input'],'grad'=>'#2563eb,#1d4ed8','shadow'=>'rgba(37,99,235,.3)','tc'=>'rgba(191,219,254,.9)','icon'=>'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z'],
@@ -113,7 +182,6 @@
                     ['label'=>'Ditolak','val'=>$stats['ditolak'],'grad'=>'#f43f5e,#e11d48','shadow'=>'rgba(244,63,94,.3)','tc'=>'rgba(254,205,211,.9)','icon'=>'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z'],
                 ];
             @endphp
-
             @foreach($rtCards as $c)
             <div style="position:relative;background:linear-gradient(135deg,{{ $c['grad'] }});color:#fff;border-radius:16px;padding:16px;display:flex;align-items:center;justify-content:space-between;overflow:hidden;box-shadow:0 6px 20px {{ $c['shadow'] }};">
                 <div class="sc-blob1"></div><div class="sc-blob2"></div>
@@ -126,7 +194,6 @@
                 </div>
             </div>
             @endforeach
-
         </div>
 
         {{-- GRID: Terbaru + Aksi --}}
@@ -181,7 +248,6 @@
                     <h3 style="font-size:13px;font-weight:700;color:#1e293b;">Aksi Cepat</h3>
                 </div>
                 <div style="padding:12px;display:flex;flex-direction:column;gap:10px;">
-
                     <a href="{{ route('rt.calon-penerima.create') }}" class="aksi-btn" style="background:#eff6ff;border-color:#bfdbfe;">
                         <div class="aksi-icon" style="background:linear-gradient(135deg,#3b82f6,#2563eb);box-shadow:0 4px 12px rgba(37,99,235,.28);">
                             <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
@@ -191,7 +257,6 @@
                             <p style="font-size:10.5px;color:#64748b;margin-top:1px;">Tambah data calon penerima</p>
                         </div>
                     </a>
-
                     <a href="{{ route('rt.laporan.index') }}" class="aksi-btn" style="background:#f0fdf4;border-color:#bbf7d0;">
                         <div class="aksi-icon" style="background:linear-gradient(135deg,#10b981,#059669);box-shadow:0 4px 12px rgba(16,185,129,.28);">
                             <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
@@ -201,8 +266,6 @@
                             <p style="font-size:10.5px;color:#64748b;margin-top:1px;">Hasil akhir dari admin</p>
                         </div>
                     </a>
-
-                    {{-- Skor rata-rata --}}
                     <div style="padding:14px;background:linear-gradient(135deg,#1e40af,#2563eb,#3b82f6);border-radius:13px;box-shadow:0 6px 20px rgba(37,99,235,.3);position:relative;overflow:hidden;">
                         <div style="position:absolute;top:-14px;right:-14px;width:70px;height:70px;background:rgba(255,255,255,.08);border-radius:50%;pointer-events:none;"></div>
                         <div style="position:relative;z-index:1;">
@@ -213,12 +276,9 @@
                             <div style="width:100%;height:4px;background:rgba(255,255,255,.2);border-radius:99px;overflow:hidden;margin-bottom:6px;">
                                 <div style="height:100%;border-radius:99px;background:rgba(255,255,255,.7);width:{{ min($avgProb,100) }}%;"></div>
                             </div>
-                            <p style="font-size:10px;color:rgba(191,219,254,.75);font-weight:500;line-height:1.5;">
-                                Rata-rata prediksi, bukan keputusan akhir
-                            </p>
+                            <p style="font-size:10px;color:rgba(191,219,254,.75);font-weight:500;line-height:1.5;">Rata-rata prediksi, bukan keputusan akhir</p>
                         </div>
                     </div>
-
                 </div>
             </div>
 

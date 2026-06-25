@@ -4,7 +4,7 @@
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
             <div>
                 <h2 style="font-size:16px;font-weight:800;color:#0f172a;letter-spacing:-.02em;">Laporan Penerima BLT-DD</h2>
-                <p style="font-size:11px;color:#94a3b8;margin-top:2px;">Kelurahan Ngerong — warga yang telah ditetapkan sebagai penerima final</p>
+                <p style="font-size:11px;color:#94a3b8;margin-top:2px;">DesaNgerong — warga yang telah ditetapkan sebagai penerima final</p>
             </div>
         </div>
     </x-slot>
@@ -42,6 +42,7 @@
         .btn-pdf{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;box-shadow:0 3px 12px rgba(220,38,38,.3);}
         .btn-excel{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;box-shadow:0 3px 12px rgba(22,163,74,.3);}
         .btn-send{background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;box-shadow:0 3px 12px rgba(37,99,235,.3);}
+        .btn-reset{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;box-shadow:0 3px 12px rgba(217,119,6,.3);}
         .btn-gray{display:inline-flex;align-items:center;padding:8px 14px;border:none;border-radius:10px;background:#e5e7eb;color:#374151;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
 
         /* upload form */
@@ -50,7 +51,7 @@
         @media(max-width:768px){.pub-form{grid-template-columns:1fr 1fr;}}
         @media(max-width:500px){.pub-form{grid-template-columns:1fr;}}
         @media(max-width:500px){.pub-form .exp-btn{justify-content:center;}}
-        .pub-input{padding:10px 13px;border:1.5px solid #e2e8f0;border-radius:11px;font-size:16px;/* prevent iOS zoom */outline:none;background:#fff;color:#0f172a;width:100%;font-family:inherit;}
+        .pub-input{padding:10px 13px;border:1.5px solid #e2e8f0;border-radius:11px;font-size:16px;outline:none;background:#fff;color:#0f172a;width:100%;font-family:inherit;}
         .pub-input:focus{border-color:#93c5fd;box-shadow:0 0 0 3px rgba(37,99,235,.08);}
         .pub-list{margin-top:14px;display:flex;flex-direction:column;gap:10px;}
         .pub-item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid #f1f5f9;border-radius:13px;background:#fafbfc;flex-wrap:wrap;}
@@ -101,10 +102,28 @@
         .bantuan-tdk{display:inline-flex;padding:2px 8px;border-radius:20px;background:#f8fafc;color:#94a3b8;font-size:10px;font-weight:600;}
         .flash-ok{display:flex;align-items:center;gap:8px;background:#f0fdf4;border:1.5px solid #bbf7d0;color:#166534;padding:11px 16px;border-radius:13px;font-size:12.5px;font-weight:600;margin-bottom:14px;}
         .flash-ok svg{width:15px;height:15px;flex-shrink:0;}
+        .flash-err{display:flex;align-items:center;gap:8px;background:#fff1f2;border:1.5px solid #fecdd3;color:#9f1239;padding:11px 16px;border-radius:13px;font-size:12.5px;font-weight:600;margin-bottom:14px;}
+        .flash-err svg{width:15px;height:15px;flex-shrink:0;}
         .empty-state{padding:52px 16px;text-align:center;}
         .empty-icon{width:46px;height:46px;background:#f1f5f9;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;}
         .tbl-foot{padding:9px 16px;border-top:1.5px solid #f1f5f9;background:#fafbfc;text-align:center;}
         .credit{font-size:11px;color:#cbd5e1;font-weight:500;}
+
+        /* riwayat accordion */
+        .rw-periode{border:1.5px solid #f1f5f9;border-radius:13px;overflow:hidden;margin-bottom:10px;}
+        .rw-periode-hd{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:#fafbfc;cursor:pointer;user-select:none;gap:8px;}
+        .rw-periode-hd:hover{background:#f1f5f9;}
+        .rw-periode-title{font-size:12.5px;font-weight:800;color:#1e293b;}
+        .rw-periode-meta{font-size:11px;color:#94a3b8;}
+        .rw-periode-body{display:none;overflow-x:auto;}
+        .rw-periode-body.open{display:block;}
+        table.rw-tbl{width:100%;border-collapse:collapse;min-width:700px;}
+        table.rw-tbl thead tr{background:#f8fafc;}
+        table.rw-tbl thead th{padding:8px 10px;font-size:9px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em;text-align:left;white-space:nowrap;}
+        table.rw-tbl tbody tr{border-top:1px solid #f8fafc;}
+        table.rw-tbl tbody td{padding:8px 10px;font-size:11.5px;color:#374151;vertical-align:middle;}
+        .chev{width:14px;height:14px;transition:transform .2s;flex-shrink:0;color:#94a3b8;}
+        .chev.open{transform:rotate(180deg);}
     </style>
 
     {{-- FLASH --}}
@@ -112,6 +131,12 @@
         <div class="flash-ok">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             {{ session('success') }}
+        </div>
+    @endif
+    @if(session('error'))
+        <div class="flash-err">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z"/></svg>
+            {{ session('error') }}
         </div>
     @endif
 
@@ -182,6 +207,20 @@
                     Kirim ke RT
                 </button>
             </form>
+
+            {{-- ── TOMBOL RESET MANUAL (BARU) ── --}}
+            @if($laporans->count() > 0)
+                <form action="{{ route('admin.laporan.reset-manual') }}" method="POST" style="display:contents;">
+                    @csrf
+                    <button type="submit" class="exp-btn btn-reset"
+                            onclick="return confirm('Arsipkan semua {{ $laporans->count() }} data penerima final ke riwayat lalu kosongkan tabel? Tindakan ini tidak dapat dibatalkan.')">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        Reset & Arsipkan
+                    </button>
+                </form>
+            @endif
+            {{-- ────────────────────────────── --}}
+
             <span style="font-size:11px;color:#94a3b8;width:100%;padding-top:2px;">{{ $totalPenerima }} penerima terdaftar</span>
         </div>
     </div>
@@ -341,14 +380,11 @@
                 $scBd = $prob>=70?'#bbf7d0':($prob>=40?'#fde68a':'#fecdd3');
             @endphp
             <div class="mob-card">
-                {{-- Header --}}
                 <div class="mob-top">
                     <div class="mob-nomor">{{ $index+1 }}</div>
                     <div class="av">{{ $init }}</div>
                     <div class="mob-name">{{ $nama }}</div>
                 </div>
-
-                {{-- NIK & KK --}}
                 <div style="display:flex;gap:10px;flex-wrap:wrap;">
                     <div class="mob-kv">
                         <span class="mob-k">NIK</span>
@@ -359,8 +395,6 @@
                         <span class="mob-nik">{{ $item->no_kk??'-' }}</span>
                     </div>
                 </div>
-
-                {{-- Grid info --}}
                 <div class="mob-rows">
                     <div class="mob-kv">
                         <span class="mob-k">RT</span>
@@ -399,8 +433,6 @@
                         @endif
                     </div>
                 </div>
-
-                {{-- Bottom: prob + status + jumlah bantuan --}}
                 <div class="mob-bottom">
                     <div class="prob-cell">
                         <div class="prob-bg"><div class="prob-fill" style="width:{{ min($prob,100) }}%;background:{{ $sc }};"></div></div>
@@ -413,8 +445,6 @@
                         Rp {{ number_format($item->jumlah_bantuan??300000,0,',','.') }}
                     </span>
                 </div>
-
-                {{-- Periode & penetapan --}}
                 <div style="font-size:10.5px;color:#94a3b8;">
                     Periode: <strong style="color:#475569;">{{ $item->periode_bantuan??'-' }}</strong>
                     &bull; Penetapan: <strong style="color:#475569;">{{ $item->tanggal_penetapan?->format('d-m-Y')??'-' }}</strong>
@@ -428,7 +458,102 @@
         @endforelse
         </div>
 
-        <div class="tbl-foot"><span class="credit">SiBantuDes · Kelurahan Ngerong</span></div>
+        <div class="tbl-foot"><span class="credit">SiBantuDes · Desa Ngerong</span></div>
     </div>
+
+    {{-- ── RIWAYAT PENERIMA (BARU) ─────────────────────────────────────── --}}
+    <div class="lp-card">
+        <div class="sec-hd">
+            <div class="sec-hd-l">
+                <div class="sec-bar" style="background:linear-gradient(180deg,#f59e0b,#d97706);"></div>
+                <span class="sec-title">Riwayat Penerima per Periode</span>
+            </div>
+            <span class="sec-count">{{ isset($riwayats) ? $riwayats->count() : 0 }} periode</span>
+        </div>
+
+        <div style="padding:14px 16px;">
+            @if(isset($riwayats) && $riwayats->count() > 0)
+                @foreach($riwayats as $periode => $rows)
+                    <div class="rw-periode">
+                        <div class="rw-periode-hd" onclick="toggleRiwayat('rw-{{ Str::slug($periode) }}')">
+                            <div>
+                                <div class="rw-periode-title">Periode {{ $periode }}</div>
+                                <div class="rw-periode-meta">
+                                    {{ $rows->count() }} penerima &bull;
+                                    Diarsipkan: {{ $rows->first()->di_arsipkan_pada?->format('d-m-Y H:i') ?? '-' }}
+                                </div>
+                            </div>
+                            <svg class="chev" id="chev-rw-{{ Str::slug($periode) }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </div>
+                        <div class="rw-periode-body" id="rw-{{ Str::slug($periode) }}">
+                            <table class="rw-tbl">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Nama</th>
+                                        <th>NIK</th>
+                                        <th>Dusun</th>
+                                        <th>Pekerjaan</th>
+                                        <th>Penghasilan</th>
+                                        <th>Prob</th>
+                                        <th>Status</th>
+                                        <th>Bantuan</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($rows as $ri => $r)
+                                        @php
+                                            $rp = $r->probability ?? 0;
+                                            if($rp<=1) $rp=$rp*100;
+                                            $rc = $rp>=70?'#10b981':($rp>=40?'#f59e0b':'#f43f5e');
+                                        @endphp
+                                        <tr>
+                                            <td style="color:#94a3b8;font-size:10.5px;font-weight:700;">{{ $ri+1 }}</td>
+                                            <td style="font-weight:600;color:#0f172a;">{{ $r->nama_lengkap }}</td>
+                                            <td><span class="nik-pill">{{ $r->nik }}</span></td>
+                                            <td>{{ $r->nama_dusun ?? '-' }}</td>
+                                            <td>{{ $r->pekerjaan ?? '-' }}</td>
+                                            <td style="white-space:nowrap;">Rp {{ number_format($r->penghasilan??0,0,',','.') }}</td>
+                                            <td>
+                                                <span style="font-size:11px;font-weight:800;color:{{ $rc }};">{{ number_format($rp,1) }}%</span>
+                                            </td>
+                                            <td>
+                                                <span class="st-pill" style="background:{{ $rp>=70?'#f0fdf4':($rp>=40?'#fffbeb':'#fff1f2') }};color:{{ $rc }};border:1px solid {{ $rp>=70?'#bbf7d0':($rp>=40?'#fde68a':'#fecdd3') }};">
+                                                    <span class="st-dot" style="background:{{ $rc }};"></span>
+                                                    {{ ucfirst($r->status_verifikasi ?? '-') }}
+                                                </span>
+                                            </td>
+                                            <td style="font-weight:700;color:#166534;white-space:nowrap;">Rp {{ number_format($r->jumlah_bantuan??0,0,',','.') }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                @endforeach
+            @else
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <svg fill="none" stroke="#d1d5db" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <p style="font-size:13px;font-weight:600;color:#94a3b8;">Belum ada riwayat arsip penerima</p>
+                    <p style="font-size:11px;color:#cbd5e1;margin-top:4px;">Riwayat akan muncul setelah klik "Reset & Arsipkan"</p>
+                </div>
+            @endif
+        </div>
+    </div>
+    {{-- ────────────────────────────────────────────────────────────────── --}}
+
+    <script>
+        function toggleRiwayat(id) {
+            const body = document.getElementById(id);
+            const chev = document.getElementById('chev-' + id);
+            if (!body) return;
+            body.classList.toggle('open');
+            chev?.classList.toggle('open');
+        }
+    </script>
 
 </x-app-layout>

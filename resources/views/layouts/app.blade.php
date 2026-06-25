@@ -28,7 +28,7 @@
             border:1.5px solid #e2e8f0;
             border-radius:16px;
             box-shadow:0 4px 24px rgba(15,23,42,.07);
-            padding:10px 18px;
+            padding:14px 22px;
             transition:border-radius .25s,box-shadow .25s;
             will-change:transform;
             transform:translateZ(0);
@@ -39,18 +39,19 @@
             box-shadow:0 8px 32px rgba(15,23,42,.10);
         }
 
-        .nb-row{ display:flex;align-items:center;gap:10px; }
+        .nb-row{ display:flex;align-items:center;gap:12px; }
 
         /* ── LINKS ── */
-        .nb-links{ display:flex;align-items:center;gap:5px;flex:1; }
+        .nb-links{ display:flex;align-items:center;gap:8px;flex:1; }
 
         .nb-links a{
             display:inline-flex;align-items:center;
-            padding:7px 13px;border-radius:10px;
-            font-size:12.5px;font-weight:600;
-            color:#64748b;background:#f8fafc;
+            padding:10px 18px;border-radius:12px;
+            font-size:15px;font-weight:700;
+            color:#475569;background:#f8fafc;
             border:1.5px solid transparent;
             text-decoration:none;white-space:nowrap;
+            letter-spacing:.01em;
             transition:background .15s,color .15s,border-color .15s,box-shadow .15s,
                         max-width .2s ease, opacity .2s ease, padding .2s ease, margin .2s ease;
             max-width:200px;
@@ -73,44 +74,100 @@
         }
 
         /* ── USER ── */
-        .nb-user{ display:flex;align-items:center;gap:8px;flex-shrink:0; }
+        .nb-user{ display:flex;align-items:center;gap:10px;flex-shrink:0; }
         .nb-avatar{
-            width:32px;height:32px;border-radius:50%;
+            width:40px;height:40px;border-radius:50%;
             background:linear-gradient(135deg,#3b82f6,#2563eb);
             display:flex;align-items:center;justify-content:center;
-            color:#fff;font-size:12px;font-weight:800;
+            color:#fff;font-size:15px;font-weight:800;
             box-shadow:0 2px 8px rgba(37,99,235,.22);flex-shrink:0;
         }
-        .nb-name{ font-size:12.5px;font-weight:600;color:#374151;white-space:nowrap; }
+        .nb-name{ font-size:14px;font-weight:700;color:#374151;white-space:nowrap; }
         .nb-logout{
-            font-size:12px;font-weight:700;color:#ef4444;
+            font-size:14px;font-weight:700;color:#ef4444;
             background:#fff1f2;border:1.5px solid #fecdd3;
-            padding:5px 12px;border-radius:9px;cursor:pointer;
+            padding:8px 16px;border-radius:10px;cursor:pointer;
             transition:background .15s;white-space:nowrap;
         }
         .nb-logout:hover{ background:#ffe4e6; }
 
         /* ══ MOBILE ══ */
         @media(max-width:768px){
-            #nb-wrap{ padding:8px 12px 0; }
-            #nb-shell{ padding:9px 13px; }
-            .nb-row{ flex-direction:column;align-items:stretch;gap:8px; }
+            #nb-wrap{ padding:8px 8px 0; }
+            #nb-shell{ padding:10px 12px 12px; border-radius:14px; }
+            .nb-row{ flex-direction:column; align-items:stretch; gap:8px; }
+
+            /* Baris user: avatar + nama + tombol keluar */
+            .nb-user{
+                justify-content:space-between;
+                width:100%;
+                background:#f8fafc;
+                border:1.5px solid #e2e8f0;
+                border-radius:12px;
+                padding:10px 14px;
+            }
+            .nb-user > div:first-child{ display:flex; align-items:center; gap:10px; flex:1; }
+            .nb-avatar{ width:38px; height:38px; font-size:16px; flex-shrink:0; }
+            .nb-name{
+                display:block !important;
+                font-size:15px;
+                font-weight:700;
+                color:#1e293b;
+            }
+            .nb-logout{
+                font-size:14px;
+                font-weight:700;
+                padding:9px 18px;
+                border-radius:10px;
+                min-height:44px;
+                display:flex;
+                align-items:center;
+                white-space:nowrap;
+                flex-shrink:0;
+            }
+
+            /* Nav links: scroll horizontal, semua label tampil penuh */
             .nb-links{
-                overflow-x:auto;-webkit-overflow-scrolling:touch;
-                scrollbar-width:none;gap:5px;padding-bottom:1px;
+                overflow-x:auto;
+                -webkit-overflow-scrolling:touch;
+                scrollbar-width:none;
+                gap:6px;
+                padding-bottom:2px;
+                display:flex !important;
+                flex-wrap:nowrap;
             }
             .nb-links::-webkit-scrollbar{ display:none; }
-            .nb-links.hide-inactive a:not(.nb-active){
-                max-width:0;opacity:0;
-                padding-left:0;padding-right:0;
-                margin:0;border-width:0;pointer-events:none;
+            .nb-links a{
+                font-size:14px !important;
+                font-weight:700 !important;
+                padding:12px 20px !important;
+                border-radius:10px !important;
+                min-height:48px !important;
+                display:inline-flex !important;
+                align-items:center !important;
+                white-space:nowrap !important;
+                /* Paksa tampil semua — override hide-inactive */
+                max-width:none !important;
+                opacity:1 !important;
+                border-width:1.5px !important;
+                pointer-events:auto !important;
+                overflow:visible !important;
             }
-            .nb-user{ justify-content:space-between;width:100%; }
-            .nb-name{ display:none; }
+            /* Paksa semua link tetap terlihat di mobile */
+            .nb-links.hide-inactive a:not(.nb-active){
+                max-width:none !important;
+                opacity:1 !important;
+                padding:12px 20px !important;
+                margin:0 !important;
+                border-width:1.5px !important;
+                pointer-events:auto !important;
+            }
         }
+
         @media(max-width:400px){
-            .nb-links a{ font-size:11.5px;padding:6px 10px; }
-            .nb-logout{ font-size:11.5px;padding:5px 10px; }
+            .nb-links a{ font-size:13px !important; padding:11px 16px !important; min-height:44px !important; }
+            .nb-logout{ font-size:13px; padding:9px 14px; }
+            .nb-name{ font-size:14px; }
         }
 
         /* ══ LAYOUT ══ */
@@ -123,6 +180,12 @@
             max-width:80rem;margin:14px auto 24px;padding:0 16px;
             display:flex;flex-direction:column;gap:14px;
         }
+
+        @media(max-width:768px){
+            .page-header{ padding:0 10px;margin-top:12px; }
+            .page-header-inner{ padding:14px 16px;border-radius:14px; }
+            .page-main{ padding:0 10px;margin-top:12px;margin-bottom:24px;gap:12px; }
+        }
     </style>
 </head>
 <body>
@@ -133,6 +196,18 @@
             <div class="nb-row">
 
                 @php $role = Auth::user()->role ?? null; @endphp
+
+                <!-- USER -->
+                <div class="nb-user">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <div class="nb-avatar">{{ strtoupper(substr(Auth::user()->name ?? 'U', 0, 1)) }}</div>
+                        <span class="nb-name">{{ Auth::user()->name ?? '' }}</span>
+                    </div>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit" class="nb-logout">Keluar</button>
+                    </form>
+                </div>
 
                 <!-- LINKS -->
                 <nav class="nb-links" id="nb-links">
@@ -151,25 +226,13 @@
                         <a href="{{ route('dashboard') }}"
                            class="{{ request()->routeIs('dashboard') ? 'nb-active' : '' }}">Dashboard</a>
                         <a href="{{ route('rt.calon-penerima.create') }}"
-                           class="{{ request()->routeIs('rt.calon-penerima.create') ? 'nb-active' : '' }}">Pendataan</a>
+                           class="{{ request()->routeIs('rt.calon-penerima.create') ? 'nb-active' : '' }}">Inputkan Warga</a>
                         <a href="{{ route('rt.calon-penerima.index') }}"
                            class="{{ request()->routeIs('rt.calon-penerima.index') ? 'nb-active' : '' }}">Riwayat</a>
                         <a href="{{ route('rt.laporan.index') }}"
                            class="{{ request()->routeIs('rt.laporan.*') ? 'nb-active' : '' }}">Laporan</a>
                     @endif
                 </nav>
-
-                <!-- USER -->
-                <div class="nb-user">
-                    <div style="display:flex;align-items:center;gap:8px;">
-                        <div class="nb-avatar">{{ strtoupper(substr(Auth::user()->name ?? 'U', 0, 1)) }}</div>
-                        <span class="nb-name">{{ Auth::user()->name ?? '' }}</span>
-                    </div>
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button type="submit" class="nb-logout">Keluar</button>
-                    </form>
-                </div>
 
             </div>
         </div>
@@ -200,17 +263,6 @@
                 : wrap.classList.add('scrolled');
         }, {threshold:0}).observe(sentinel);
 
-        /*
-         * ── hide-inactive: DESKTOP ONLY ──
-         *
-         * Di mobile (≤768px) fitur ini dimatikan total karena:
-         *  - Konten halaman pendek → scrollY sering jitter di bawah
-         *  - iOS rubber-band / Android overscroll bounce bikin scrollY
-         *    naik-turun ±2-5px meski jari tidak bergerak → class toggle
-         *    bolak-balik tiap frame → kedip/getar
-         *  - Di mobile sudah ada horizontal scroll untuk nav links,
-         *    jadi collapse tidak diperlukan
-         */
         var MOBILE_BP    = 768;
 
         var lastY        = window.scrollY;

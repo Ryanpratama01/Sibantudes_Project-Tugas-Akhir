@@ -22,28 +22,24 @@ class LaporanController extends Controller
         if (!$rt) {
             $laporans = collect();
             $stats = [
-                'total' => 0,
+                'total'    => 0,
                 'diterima' => 0,
-                'ditolak' => 0,
+                'ditolak'  => 0,
             ];
 
             return view('rt.laporan', compact('laporans', 'stats'));
         }
 
-        $nomorRt = $rt->nomor_rt;
-        $namaDusun = $rt->dusun->nama_dusun ?? null;
-
         $laporans = PenerimaFinal::query()
-            ->where('nomor_rt', $nomorRt)
-            ->where('nama_dusun', $namaDusun)
+            ->where('rt_id', $rt->id)
             ->whereIn('status_verifikasi', ['disetujui', 'ditolak'])
             ->orderByDesc('tanggal_penetapan')
             ->get();
 
         $stats = [
-            'total' => $laporans->count(),
+            'total'    => $laporans->count(),
             'diterima' => $laporans->where('status_verifikasi', 'disetujui')->count(),
-            'ditolak' => $laporans->where('status_verifikasi', 'ditolak')->count(),
+            'ditolak'  => $laporans->where('status_verifikasi', 'ditolak')->count(),
         ];
 
         return view('rt.laporan', compact('laporans', 'stats'));

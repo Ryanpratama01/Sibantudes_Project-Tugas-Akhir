@@ -244,7 +244,7 @@
                               d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
                     </svg>
-                    Kelurahan Ngerong
+                    Desa Ngerong
                 </div>
                 <div class="left-caption">
                     Daftar &amp; Kelola<br>Data Warga <span>BLT-DD</span><br>Secara Digital
@@ -264,7 +264,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
                             </svg>
                         </div>
-                        <span>Validasi &amp; pengajuan ke kelurahan</span>
+                        <span>Validasi &amp; pengajuan ke Admin Prangkat Desa</span>
                     </div>
                     <div class="feat">
                         <div class="feat-dot">
@@ -282,7 +282,7 @@
     <!-- ── RIGHT PANEL ── -->
     <div class="right">
 
-        <div class="form-eyebrow">SiBantuDes &bull; Kelurahan Ngerong</div>
+        <div class="form-eyebrow">SiBantuDes &bull; Desa Ngerong</div>
         <div class="form-title">Daftar Akun RT</div>
         <div class="form-sub">Lengkapi data untuk mendaftar ke sistem</div>
 

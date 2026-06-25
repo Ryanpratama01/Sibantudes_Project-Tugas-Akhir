@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 
 use App\Models\CalonPenerima;
 use App\Models\Dusun;
+use App\Models\PenerimaFinal;
 
 use App\Http\Controllers\LandingPageController;
 
@@ -157,7 +158,8 @@ Route::middleware(['auth', 'verified', 'is_active'])
             $q = trim((string) $request->query('q', ''));
 
             $wargasQuery = CalonPenerima::with(['rt.dusun', 'prediksiKelayakan', 'user'])
-                ->whereIn('tracking_status', ['terkirim', 'sedang_validasi', 'selesai'])
+                ->whereIn('tracking_status', ['terkirim', 'sedang_validasi', 'selesai', 'ditinjau_ulang'])
+                ->whereNull('arsip_tahun')
                 ->latest();
 
             if ($q !== '') {
@@ -177,25 +179,36 @@ Route::middleware(['auth', 'verified', 'is_active'])
             return view('admin.data-warga', compact('dusuns', 'wargas'));
         })->name('data-warga');
 
-        // TAMBAHAN: BERSIHKAN DATA WARGA AKTIF
-        Route::delete('/data-warga/bersihkan', function (Request $request) {
+        // LIHAT ARSIP — harus di atas semua route {id} agar tidak bentrok
+        Route::get('/data-warga/arsip', function (Request $request) {
             $user = $request->user();
 
             if (!$user || $user->role !== 'admin') {
                 abort(403, 'Akses ditolak: hanya Admin.');
             }
 
-            DB::transaction(function () {
-                // hapus hasil prediksi yang terkait data aktif
-                DB::table('prediksi_kelayakans')->delete();
+            $tahun       = $request->query('tahun', now()->year);
+            $q           = trim((string) $request->query('q', ''));
+            $daftarTahun = CalonPenerima::whereNotNull('arsip_tahun')
+                            ->distinct()
+                            ->orderByDesc('arsip_tahun')
+                            ->pluck('arsip_tahun');
 
-                // hapus data pengajuan aktif
-                DB::table('calon_penerimas')->delete();
-            });
+            $arsipQuery = CalonPenerima::with(['rt.dusun', 'prediksiKelayakan', 'user'])
+                ->where('arsip_tahun', $tahun)
+                ->latest();
 
-            return redirect()->route('admin.data-warga')
-                ->with('success', 'Semua data warga aktif berhasil dibersihkan. Arsip laporan tetap aman.');
-        })->name('data-warga.bersihkan');
+            if ($q !== '') {
+                $arsipQuery->where(function ($sub) use ($q) {
+                    $sub->where('nik', 'like', "%{$q}%")
+                        ->orWhere('nama_lengkap', 'like', "%{$q}%");
+                });
+            }
+
+            $arsips = $arsipQuery->paginate(10)->withQueryString();
+
+            return view('admin.data-warga-arsip', compact('arsips', 'tahun', 'daftarTahun'));
+        })->name('data-warga.arsip');
 
         // MULAI VALIDASI
         Route::post('/data-warga/{id}/mulai-validasi', function (Request $request, $id) {
@@ -207,7 +220,7 @@ Route::middleware(['auth', 'verified', 'is_active'])
 
             $warga = CalonPenerima::findOrFail($id);
 
-            if ($warga->tracking_status !== 'terkirim') {
+            if (!in_array($warga->tracking_status, ['terkirim', 'ditinjau_ulang'])) {
                 return back()->with('error', 'Data ini belum bisa masuk tahap validasi.');
             }
 
@@ -244,6 +257,132 @@ Route::middleware(['auth', 'verified', 'is_active'])
             return back()->with('success', 'Hasil validasi berhasil dikirim ke RT.');
         })->name('data-warga.selesai-validasi');
 
+        // TERIMA LANGSUNG
+        Route::post('/data-warga/{id}/terima', function (Request $request, $id) {
+            $user = $request->user();
+
+            if (!$user || $user->role !== 'admin') {
+                abort(403, 'Akses ditolak: hanya Admin.');
+            }
+
+            $warga = CalonPenerima::findOrFail($id);
+
+            if (!in_array($warga->tracking_status, ['terkirim', 'sedang_validasi', 'ditinjau_ulang'])) {
+                return back()->with('error', 'Status tidak memungkinkan untuk diterima langsung.');
+            }
+
+            $warga->update([
+                'tracking_status'   => 'selesai',
+                'status_verifikasi' => 'disetujui',
+            ]);
+
+            return back()->with('success', 'Warga berhasil diterima sebagai penerima BLT-DD.');
+        })->name('data-warga.terima');
+
+        // TOLAK LANGSUNG
+        Route::post('/data-warga/{id}/tolak', function (Request $request, $id) {
+            $user = $request->user();
+
+            if (!$user || $user->role !== 'admin') {
+                abort(403, 'Akses ditolak: hanya Admin.');
+            }
+
+            $warga = CalonPenerima::findOrFail($id);
+
+            if (!in_array($warga->tracking_status, ['terkirim', 'sedang_validasi', 'ditinjau_ulang'])) {
+                return back()->with('error', 'Status tidak memungkinkan untuk ditolak langsung.');
+            }
+
+            $warga->update([
+                'tracking_status'   => 'selesai',
+                'status_verifikasi' => 'ditolak',
+            ]);
+
+            // Otomatis catat sebagai penerima final dengan status ditolak,
+            // agar langsung muncul di Laporan dan tidak ikut Filterisasi.
+            PenerimaFinal::updateOrCreate(
+                [
+                    'nik'             => $warga->nik,
+                    'periode_bantuan' => '2026 Triwulan 1',
+                ],
+                [
+                    'nama_lengkap'      => $warga->nama_lengkap ?? '-',
+                    'no_kk'             => $warga->no_kk ?? '-',
+                    'rt_id'             => $warga->rt_id,
+                    'nomor_rt'          => $warga->rt?->nomor_rt ?? null,
+                    'nama_dusun'        => $warga->rt?->dusun?->nama_dusun ?? '-',
+                    'pekerjaan'         => $warga->pekerjaan ?? '-',
+                    'penghasilan'       => $warga->penghasilan ?? 0,
+                    'jumlah_tanggungan' => $warga->jumlah_tanggungan ?? 0,
+                    'aset_kepemilikan'  => $warga->aset_kepemilikan ?? '-',
+                    'kondisi_rumah'     => $warga->kondisi_rumah ?? 'Tidak Diketahui',
+                    'meteran_listrik'   => $warga->meteran_listrik ?? 'Tidak Diketahui',
+                    'sumber_air'        => $warga->sumber_air ?? 'Tidak Diketahui',
+                    'bantuan_lain'      => $warga->bantuan_lain ?? 'tidak',
+                    'usia'              => $warga->usia ?? 0,
+                    'probability'       => $warga->prediksiKelayakan->probability ?? 0,
+                    'status_verifikasi' => 'ditolak',
+                    'tanggal_penetapan' => now()->toDateString(),
+                    'periode_bantuan'   => '2026 Triwulan 1',
+                    'jumlah_bantuan'    => 300000,
+                ]
+            );
+
+            return back()->with('success', 'Pengajuan warga berhasil ditolak.');
+        })->name('data-warga.tolak');
+
+        // AKTIFKAN KEMBALI
+        Route::post('/data-warga/{id}/aktifkan-kembali', function (Request $request, $id) {
+            $user = $request->user();
+
+            if (!$user || $user->role !== 'admin') {
+                abort(403, 'Akses ditolak: hanya Admin.');
+            }
+
+            $warga = CalonPenerima::findOrFail($id);
+
+            if ($warga->tracking_status !== 'selesai') {
+                return back()->with('error', 'Hanya data yang sudah selesai yang bisa diaktifkan kembali.');
+            }
+
+            // Jika warga sebelumnya tercatat sebagai PenerimaFinal dengan status ditolak
+            // (hasil tolak langsung dari Data Warga), hapus agar tidak nyangkut di Laporan
+            // saat diaktifkan kembali untuk ditinjau ulang.
+            PenerimaFinal::where('nik', $warga->nik)
+                ->where('periode_bantuan', '2026 Triwulan 1')
+                ->where('status_verifikasi', 'ditolak')
+                ->delete();
+
+            $warga->update([
+                'tracking_status'   => 'ditinjau_ulang',
+                'status_verifikasi' => 'pending',
+                'arsip_tahun'       => null,
+            ]);
+
+            return back()->with('success', 'Pengajuan warga berhasil diaktifkan kembali untuk ditinjau ulang.');
+        })->name('data-warga.aktifkan-kembali');
+
+        // ARSIPKAN
+        Route::post('/data-warga/{id}/arsipkan', function (Request $request, $id) {
+            $user = $request->user();
+
+            if (!$user || $user->role !== 'admin') {
+                abort(403, 'Akses ditolak: hanya Admin.');
+            }
+
+            $warga = CalonPenerima::findOrFail($id);
+
+            if ($warga->tracking_status !== 'selesai') {
+                return back()->with('error', 'Hanya data selesai yang bisa diarsipkan.');
+            }
+
+            $warga->update([
+                'arsip_tahun' => now()->year,
+            ]);
+
+            return back()->with('success', 'Data berhasil diarsipkan ke tahun ' . now()->year . '.');
+        })->name('data-warga.arsipkan');
+
         // DATA AKUN
         Route::get('/data-akun', [AdminController::class, 'dataAkun'])->name('data-akun');
         Route::post('/data-akun/{id}/role', [AdminController::class, 'ubahRole'])->name('data-akun.role');
@@ -254,12 +393,15 @@ Route::middleware(['auth', 'verified', 'is_active'])
         Route::get('/filterisasi', [FilterisasiController::class, 'index'])->name('filterisasi');
         Route::post('/filterisasi/tetapkan', [FilterisasiController::class, 'tetapkan'])->name('filterisasi.tetapkan');
         Route::post('/filterisasi/reset', [FilterisasiController::class, 'resetDusun'])->name('filterisasi.reset');
+        Route::post('/filterisasi/simpan-periode', [FilterisasiController::class, 'simpanPeriode'])->name('filterisasi.simpanPeriode');
+        Route::delete('/filterisasi/hapus-periode/{id}', [FilterisasiController::class, 'hapusPeriode'])->name('filterisasi.hapusPeriode');
 
         // LAPORAN ADMIN
         Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan');
         Route::get('/laporan/pdf', [LaporanController::class, 'exportPdf'])->name('laporan.pdf');
         Route::get('/laporan/excel', [LaporanController::class, 'exportExcel'])->name('laporan.excel');
         Route::post('/laporan/kirim-ke-rt', [LaporanController::class, 'kirimKeRt'])->name('laporan.kirim-ke-rt');
+        Route::post('/laporan/reset-manual', [LaporanController::class, 'resetManual'])->name('laporan.reset-manual');
         Route::post('/laporan/upload-publik-pdf', [LaporanController::class, 'uploadPublikPdf'])->name('laporan.upload-publik-pdf');
         Route::delete('/laporan/publik-pdf/{id}', [LaporanController::class, 'hapusPublikPdf'])->name('laporan.hapus-publik-pdf');
         Route::delete('/laporan/bersihkan-riwayat-selesai', [LaporanController::class, 'bersihkanRiwayatSelesai'])

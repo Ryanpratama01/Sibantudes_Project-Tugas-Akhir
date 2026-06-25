@@ -7,10 +7,12 @@ use App\Models\CalonPenerima;
 use App\Models\PrediksiKelayakan;
 use App\Models\RT;
 use App\Services\MLPredictionService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+
 
 class CalonPenerimaController extends Controller
 {
@@ -58,41 +60,57 @@ class CalonPenerimaController extends Controller
         }
 
         $validated = $request->validate([
-            'rt_id'              => 'nullable|exists:rts,id',
-            'no_kk'              => 'required|digits:16|unique:calon_penerimas,no_kk',
-            'nik'                => 'required|digits:16|unique:calon_penerimas,nik',
-            'nama_lengkap'       => 'required|string|max:255',
-            'jenis_kelamin'      => 'required|in:Laki-laki,Perempuan',
-            'tempat_lahir'       => 'required|string|max:255',
-            'tanggal_lahir'      => 'required|date',
-            'alamat'             => 'required|string',
-            'desa'               => 'nullable|string|max:255',
-            'pekerjaan'          => 'required|string',
-            'penghasilan'        => 'required|numeric|min:0',
-            'jumlah_tanggungan'  => 'required|integer|min:0',
-            'aset_kepemilikan'   => 'required|string',
-            'bantuan_lain'       => 'required|in:ya,tidak',
-            'usia'               => 'required|integer|min:17|max:100',
-            'status_perkawinan'  => 'required|string',
-            'kondisi_rumah'      => 'required|in:Layak,Sedang,Tidak Layak',
-            'meteran_listrik'    => 'required|in:450VA,900VA,1300VA+',
-            'sumber_air'         => 'required|in:PDAM,Sumur,Sungai',
-            // Upload foto (opsional)
-            'foto_rumah_depan'      => 'nullable|image|max:2048',
-            'foto_rumah_belakang'   => 'nullable|image|max:2048',
-            'foto_rumah_kanan'      => 'nullable|image|max:2048',
-            'foto_rumah_kiri'       => 'nullable|image|max:2048',
-            'foto_kk'               => 'nullable|image|max:2048',
-            'foto_ktp'              => 'nullable|image|max:2048',
-            'foto_rekening_listrik' => 'nullable|mimes:jpg,jpeg,png,pdf|max:2048',
-            'foto_meteran_air'      => 'nullable|image|max:2048',
-            'dokumen_pendukung'     => 'nullable|mimes:jpg,jpeg,png,pdf,doc,docx|max:5120',
+            'rt_id'                   => 'nullable|exists:rts,id',
+            'no_kk'                   => 'required|digits:16|unique:calon_penerimas,no_kk',
+            'nik'                     => 'required|digits:16|unique:calon_penerimas,nik',
+            'nama_lengkap'            => 'required|string|max:255',
+            'jenis_kelamin'           => 'required|in:Laki-laki,Perempuan',
+            'tempat_lahir'            => 'required|string|max:255',
+            'tanggal_lahir'           => 'required|date',
+            'alamat'                  => 'required|string',
+            'desa'                    => 'nullable|string|max:255',
+            'pekerjaan'               => 'required|string',
+            'penghasilan'             => 'required|numeric|min:0',
+            'jumlah_tanggungan'       => 'required|integer|min:0',
+            'aset_pilihan'            => 'nullable|array',
+            'aset_pilihan.*'          => 'nullable|string',
+            'aset_manual'             => 'nullable|string|max:255',
+            'bantuan_lain'            => 'required|in:ya,tidak',
+            'usia'                    => 'required|integer|min:17|max:100',
+            'status_perkawinan'       => 'required|string',
+            'lantai_rumah'            => 'required|string',
+            'dinding_rumah'           => 'required|string',
+            'atap_rumah'              => 'required|string',
+            'luas_rumah_m2'           => 'required|integer|min:1',
+            'status_kepemilikan_rumah'=> 'required|string',
+            'meteran_listrik'         => 'required|in:450VA,900VA,1300VA+',
+            'sumber_air'              => 'required|in:PDAM,Sumur,Sungai',
+            'foto_rumah_depan'        => 'nullable|image',
+            'foto_rumah_belakang'     => 'nullable|image',
+            'foto_rumah_kanan'        => 'nullable|image',
+            'foto_rumah_kiri'         => 'nullable|image',
+            'foto_kk'                 => 'nullable|image',
+            'foto_ktp'                => 'nullable|image',
+            'foto_rekening_listrik'   => 'nullable|mimes:jpg,jpeg,png,pdf',
+            'foto_meteran_air'        => 'nullable|image',
+            'dokumen_pendukung'       => 'nullable|mimes:jpg,jpeg,png,pdf,doc,docx',
         ], [
             'nik.unique'   => 'NIK sudah pernah diinput.',
             'no_kk.unique' => 'No. KK sudah pernah diinput.',
         ]);
 
         $validated['rt_id'] = $myRtId;
+
+        $asetGabung = $this->buildAsetString(
+            $validated['aset_pilihan'] ?? [],
+            $validated['aset_manual']  ?? ''
+        );
+        $validated['aset_kepemilikan'] = $asetGabung;
+
+        $validated['kondisi_rumah'] = $this->deriveKondisiRumah(
+            $validated['lantai_rumah'],
+            $validated['dinding_rumah']
+        );
 
         $rt = RT::with('dusun')->find($myRtId);
         if ($rt && $rt->dusun) {
@@ -103,62 +121,81 @@ class CalonPenerimaController extends Controller
 
         DB::beginTransaction();
         try {
-            // Handle upload foto
-            $fotoFields = [
+            $fotoImages = [
                 'foto_rumah_depan', 'foto_rumah_belakang', 'foto_rumah_kanan', 'foto_rumah_kiri',
-                'foto_kk', 'foto_ktp', 'foto_rekening_listrik', 'foto_meteran_air', 'dokumen_pendukung',
+                'foto_kk', 'foto_ktp', 'foto_meteran_air',
             ];
-            foreach ($fotoFields as $field) {
+            $fotoFiles = [
+                'foto_rekening_listrik', 'dokumen_pendukung',
+            ];
+
+            foreach ($fotoImages as $field) {
+                if ($request->hasFile($field)) {
+                    $validated[$field] = $this->simpanFotoKompres($request->file($field));
+                }
+            }
+            foreach ($fotoFiles as $field) {
                 if ($request->hasFile($field)) {
                     $validated[$field] = $request->file($field)->store('dokumen-warga', 'public');
                 }
             }
 
             $calonPenerima = CalonPenerima::create([
-                'user_id'            => $user->id,
-                'rt_id'              => $validated['rt_id'],
-                'no_kk'              => $validated['no_kk'],
-                'nik'                => $validated['nik'],
-                'nama_lengkap'       => $validated['nama_lengkap'],
-                'jenis_kelamin'      => $validated['jenis_kelamin'],
-                'tempat_lahir'       => $validated['tempat_lahir'],
-                'tanggal_lahir'      => $validated['tanggal_lahir'],
-                'alamat'             => $validated['alamat'],
-                'desa'               => $validated['desa'],
-                'pekerjaan'          => $validated['pekerjaan'],
-                'penghasilan'        => $validated['penghasilan'],
-                'jumlah_tanggungan'  => $validated['jumlah_tanggungan'],
-                'aset_kepemilikan'   => $validated['aset_kepemilikan'],
-                'kondisi_rumah'      => $validated['kondisi_rumah'],
-                'meteran_listrik'    => $validated['meteran_listrik'],
-                'sumber_air'         => $validated['sumber_air'],
-                'bantuan_lain'       => $validated['bantuan_lain'],
-                'usia'               => $validated['usia'],
-                'status_perkawinan'  => $validated['status_perkawinan'],
-                'status_verifikasi'  => 'pending',
-                'tracking_status'    => 'draft',
-                'foto_rumah_depan'      => $validated['foto_rumah_depan'] ?? null,
-                'foto_rumah_belakang'   => $validated['foto_rumah_belakang'] ?? null,
-                'foto_rumah_kanan'      => $validated['foto_rumah_kanan'] ?? null,
-                'foto_rumah_kiri'       => $validated['foto_rumah_kiri'] ?? null,
-                'foto_kk'               => $validated['foto_kk'] ?? null,
-                'foto_ktp'              => $validated['foto_ktp'] ?? null,
-                'foto_rekening_listrik' => $validated['foto_rekening_listrik'] ?? null,
-                'foto_meteran_air'      => $validated['foto_meteran_air'] ?? null,
-                'dokumen_pendukung'     => $validated['dokumen_pendukung'] ?? null,
+                'user_id'                  => $user->id,
+                'rt_id'                    => $validated['rt_id'],
+                'no_kk'                    => $validated['no_kk'],
+                'nik'                      => $validated['nik'],
+                'nama_lengkap'             => $validated['nama_lengkap'],
+                'jenis_kelamin'            => $validated['jenis_kelamin'],
+                'tempat_lahir'             => $validated['tempat_lahir'],
+                'tanggal_lahir'            => $validated['tanggal_lahir'],
+                'alamat'                   => $validated['alamat'],
+                'desa'                     => $validated['desa'],
+                'pekerjaan'                => $validated['pekerjaan'],
+                'penghasilan'              => $validated['penghasilan'],
+                'jumlah_tanggungan'        => $validated['jumlah_tanggungan'],
+                'aset_kepemilikan'         => $validated['aset_kepemilikan'],
+                'kondisi_rumah'            => $validated['kondisi_rumah'],
+                'lantai_rumah'             => $validated['lantai_rumah'],
+                'dinding_rumah'            => $validated['dinding_rumah'],
+                'atap_rumah'               => $validated['atap_rumah'],
+                'luas_rumah_m2'            => $validated['luas_rumah_m2'],
+                'status_kepemilikan_rumah' => $validated['status_kepemilikan_rumah'],
+                'meteran_listrik'          => $validated['meteran_listrik'],
+                'sumber_air'               => $validated['sumber_air'],
+                'bantuan_lain'             => $validated['bantuan_lain'],
+                'usia'                     => $validated['usia'],
+                'status_perkawinan'        => $validated['status_perkawinan'],
+                'status_verifikasi'        => 'pending',
+                'tracking_status'          => 'draft',
+                'periode_bulan'            => Carbon::now('Asia/Jakarta')->startOfMonth()->toDateString(),
+                'foto_rumah_depan'         => $validated['foto_rumah_depan'] ?? null,
+                'foto_rumah_belakang'      => $validated['foto_rumah_belakang'] ?? null,
+                'foto_rumah_kanan'         => $validated['foto_rumah_kanan'] ?? null,
+                'foto_rumah_kiri'          => $validated['foto_rumah_kiri'] ?? null,
+                'foto_kk'                  => $validated['foto_kk'] ?? null,
+                'foto_ktp'                 => $validated['foto_ktp'] ?? null,
+                'foto_rekening_listrik'    => $validated['foto_rekening_listrik'] ?? null,
+                'foto_meteran_air'         => $validated['foto_meteran_air'] ?? null,
+                'dokumen_pendukung'        => $validated['dokumen_pendukung'] ?? null,
             ]);
 
-            // ML Prediction
             $predictionData = [
-                'pekerjaan'         => $validated['pekerjaan'],
-                'penghasilan'       => $validated['penghasilan'],
-                'jumlah_tanggungan' => $validated['jumlah_tanggungan'],
-                'aset_kepemilikan'  => $validated['aset_kepemilikan'],
-                'bantuan_lain'      => $validated['bantuan_lain'],
-                'usia'              => $validated['usia'],
-                'kondisi_rumah'     => $validated['kondisi_rumah'],
-                'meteran_listrik'   => $validated['meteran_listrik'],
-                'sumber_air'        => $validated['sumber_air'],
+                'pekerjaan'                => $validated['pekerjaan'],
+                'penghasilan'              => $validated['penghasilan'],
+                'jumlah_tanggungan'        => $validated['jumlah_tanggungan'],
+                'aset_pilihan'             => $validated['aset_pilihan'] ?? [],
+                'aset_manual'              => $validated['aset_manual'] ?? '',
+                'bantuan_lain'             => $validated['bantuan_lain'],
+                'usia'                     => $validated['usia'],
+                'status_perkawinan'        => $validated['status_perkawinan'],
+                'lantai_rumah'             => $validated['lantai_rumah'],
+                'dinding_rumah'            => $validated['dinding_rumah'],
+                'atap_rumah'               => $validated['atap_rumah'],
+                'luas_rumah_m2'            => $validated['luas_rumah_m2'],
+                'status_kepemilikan_rumah' => $validated['status_kepemilikan_rumah'],
+                'meteran_listrik'          => $validated['meteran_listrik'],
+                'sumber_air'               => $validated['sumber_air'],
             ];
 
             $prediction = $this->mlService->getPrediction($predictionData);
@@ -188,7 +225,7 @@ class CalonPenerimaController extends Controller
     {
         $user = Auth::user();
 
-        if ($calonPenerima->user_id !== $user->id) {
+        if ((int) $calonPenerima->user_id !== (int) $user->id) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -203,7 +240,7 @@ class CalonPenerimaController extends Controller
     {
         $user = Auth::user();
 
-        if ($calonPenerima->user_id !== $user->id || ($calonPenerima->tracking_status ?? 'draft') !== 'draft') {
+        if ((int) $calonPenerima->user_id !== (int) $user->id || ($calonPenerima->tracking_status ?? 'draft') !== 'draft') {
             abort(403, 'Data yang sudah diajukan tidak dapat diubah.');
         }
 
@@ -214,7 +251,7 @@ class CalonPenerimaController extends Controller
     {
         $user = Auth::user();
 
-        if ($calonPenerima->user_id !== $user->id || ($calonPenerima->tracking_status ?? 'draft') !== 'draft') {
+        if ((int) $calonPenerima->user_id !== (int) $user->id || ($calonPenerima->tracking_status ?? 'draft') !== 'draft') {
             abort(403, 'Data yang sudah diajukan tidak dapat diubah.');
         }
 
@@ -224,40 +261,56 @@ class CalonPenerimaController extends Controller
         }
 
         $validated = $request->validate([
-            'rt_id'              => 'nullable|exists:rts,id',
-            'no_kk'              => 'required|digits:16|unique:calon_penerimas,no_kk,' . $calonPenerima->id,
-            'nik'                => 'required|digits:16|unique:calon_penerimas,nik,' . $calonPenerima->id,
-            'nama_lengkap'       => 'required|string|max:255',
-            'jenis_kelamin'      => 'required|in:Laki-laki,Perempuan',
-            'tempat_lahir'       => 'required|string|max:255',
-            'tanggal_lahir'      => 'required|date',
-            'alamat'             => 'required|string',
-            'desa'               => 'nullable|string|max:255',
-            'pekerjaan'          => 'required|string',
-            'penghasilan'        => 'required|numeric|min:0',
-            'jumlah_tanggungan'  => 'required|integer|min:0',
-            'aset_kepemilikan'   => 'required|string',
-            'bantuan_lain'       => 'required|in:ya,tidak',
-            'usia'               => 'required|integer|min:17|max:100',
-            'status_perkawinan'  => 'required|string',
-            'kondisi_rumah'      => 'required|in:Layak,Sedang,Tidak Layak',
-            'meteran_listrik'    => 'required|in:450VA,900VA,1300VA+',
-            'sumber_air'         => 'required|in:PDAM,Sumur,Sungai',
-            'foto_rumah_depan'      => 'nullable|image|max:2048',
-            'foto_rumah_belakang'   => 'nullable|image|max:2048',
-            'foto_rumah_kanan'      => 'nullable|image|max:2048',
-            'foto_rumah_kiri'       => 'nullable|image|max:2048',
-            'foto_kk'               => 'nullable|image|max:2048',
-            'foto_ktp'              => 'nullable|image|max:2048',
-            'foto_rekening_listrik' => 'nullable|mimes:jpg,jpeg,png,pdf|max:2048',
-            'foto_meteran_air'      => 'nullable|image|max:2048',
-            'dokumen_pendukung'     => 'nullable|mimes:jpg,jpeg,png,pdf,doc,docx|max:5120',
+            'rt_id'                   => 'nullable|exists:rts,id',
+            'no_kk'                   => 'required|digits:16|unique:calon_penerimas,no_kk,' . $calonPenerima->id,
+            'nik'                     => 'required|digits:16|unique:calon_penerimas,nik,' . $calonPenerima->id,
+            'nama_lengkap'            => 'required|string|max:255',
+            'jenis_kelamin'           => 'required|in:Laki-laki,Perempuan',
+            'tempat_lahir'            => 'required|string|max:255',
+            'tanggal_lahir'           => 'required|date',
+            'alamat'                  => 'required|string',
+            'desa'                    => 'nullable|string|max:255',
+            'pekerjaan'               => 'required|string',
+            'penghasilan'             => 'required|numeric|min:0',
+            'jumlah_tanggungan'       => 'required|integer|min:0',
+            'aset_pilihan'            => 'nullable|array',
+            'aset_pilihan.*'          => 'nullable|string',
+            'aset_manual'             => 'nullable|string|max:255',
+            'bantuan_lain'            => 'required|in:ya,tidak',
+            'usia'                    => 'required|integer|min:17|max:100',
+            'status_perkawinan'       => 'required|string',
+            'lantai_rumah'            => 'required|string',
+            'dinding_rumah'           => 'required|string',
+            'atap_rumah'              => 'required|string',
+            'luas_rumah_m2'           => 'required|integer|min:1',
+            'status_kepemilikan_rumah'=> 'required|string',
+            'meteran_listrik'         => 'required|in:450VA,900VA,1300VA+',
+            'sumber_air'              => 'required|in:PDAM,Sumur,Sungai',
+            'foto_rumah_depan'        => 'nullable|image',
+            'foto_rumah_belakang'     => 'nullable|image',
+            'foto_rumah_kanan'        => 'nullable|image',
+            'foto_rumah_kiri'         => 'nullable|image',
+            'foto_kk'                 => 'nullable|image',
+            'foto_ktp'                => 'nullable|image',
+            'foto_rekening_listrik'   => 'nullable|mimes:jpg,jpeg,png,pdf',
+            'foto_meteran_air'        => 'nullable|image',
+            'dokumen_pendukung'       => 'nullable|mimes:jpg,jpeg,png,pdf,doc,docx',
         ], [
             'nik.unique'   => 'NIK sudah pernah diinput.',
             'no_kk.unique' => 'No. KK sudah pernah diinput.',
         ]);
 
         $validated['rt_id'] = $myRtId;
+
+        $validated['aset_kepemilikan'] = $this->buildAsetString(
+            $validated['aset_pilihan'] ?? [],
+            $validated['aset_manual']  ?? ''
+        );
+
+        $validated['kondisi_rumah'] = $this->deriveKondisiRumah(
+            $validated['lantai_rumah'],
+            $validated['dinding_rumah']
+        );
 
         $rt = RT::with('dusun')->find($myRtId);
         if ($rt && $rt->dusun) {
@@ -268,12 +321,23 @@ class CalonPenerimaController extends Controller
 
         DB::beginTransaction();
         try {
-            // Handle upload foto — hapus lama kalau ada yang baru
-            $fotoFields = [
+            $fotoImages = [
                 'foto_rumah_depan', 'foto_rumah_belakang', 'foto_rumah_kanan', 'foto_rumah_kiri',
-                'foto_kk', 'foto_ktp', 'foto_rekening_listrik', 'foto_meteran_air', 'dokumen_pendukung',
+                'foto_kk', 'foto_ktp', 'foto_meteran_air',
             ];
-            foreach ($fotoFields as $field) {
+            $fotoFiles = [
+                'foto_rekening_listrik', 'dokumen_pendukung',
+            ];
+
+            foreach ($fotoImages as $field) {
+                if ($request->hasFile($field)) {
+                    if ($calonPenerima->$field) {
+                        Storage::disk('public')->delete($calonPenerima->$field);
+                    }
+                    $validated[$field] = $this->simpanFotoKompres($request->file($field));
+                }
+            }
+            foreach ($fotoFiles as $field) {
                 if ($request->hasFile($field)) {
                     if ($calonPenerima->$field) {
                         Storage::disk('public')->delete($calonPenerima->$field);
@@ -283,34 +347,6 @@ class CalonPenerimaController extends Controller
             }
 
             $calonPenerima->update($validated);
-
-            /*
-            // Uncomment kalau mau update ulang prediksi ML saat edit
-            $predictionData = [
-                'pekerjaan'         => $validated['pekerjaan'],
-                'penghasilan'       => $validated['penghasilan'],
-                'jumlah_tanggungan' => $validated['jumlah_tanggungan'],
-                'aset_kepemilikan'  => $validated['aset_kepemilikan'],
-                'bantuan_lain'      => $validated['bantuan_lain'],
-                'usia'              => $validated['usia'],
-                'kondisi_rumah'     => $validated['kondisi_rumah'],
-                'meteran_listrik'   => $validated['meteran_listrik'],
-                'sumber_air'        => $validated['sumber_air'],
-            ];
-            $prediction = $this->mlService->getPrediction($predictionData);
-            if ($prediction) {
-                PrediksiKelayakan::updateOrCreate(
-                    ['calon_penerima_id' => $calonPenerima->id],
-                    [
-                        'probability'    => $prediction['probability'],
-                        'recommendation' => $prediction['recommendation'],
-                        'kondisi_rumah'  => $validated['kondisi_rumah'],
-                        'meteran_listrik'=> $validated['meteran_listrik'],
-                        'sumber_air'     => $validated['sumber_air'],
-                    ]
-                );
-            }
-            */
 
             DB::commit();
 
@@ -326,7 +362,7 @@ class CalonPenerimaController extends Controller
     {
         $user = Auth::user();
 
-        if ($calonPenerima->user_id !== $user->id) {
+        if ((int) $calonPenerima->user_id !== (int) $user->id) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -345,11 +381,10 @@ class CalonPenerimaController extends Controller
     {
         $user = Auth::user();
 
-        if ($calonPenerima->user_id !== $user->id || ($calonPenerima->tracking_status ?? 'draft') !== 'draft') {
+        if ((int) $calonPenerima->user_id !== (int) $user->id || ($calonPenerima->tracking_status ?? 'draft') !== 'draft') {
             abort(403, 'Data yang sudah diajukan tidak dapat dihapus.');
         }
 
-        // Hapus foto dari storage
         $fotoFields = [
             'foto_rumah_depan', 'foto_rumah_belakang', 'foto_rumah_kanan', 'foto_rumah_kiri',
             'foto_kk', 'foto_ktp', 'foto_rekening_listrik', 'foto_meteran_air', 'dokumen_pendukung',
@@ -366,6 +401,53 @@ class CalonPenerimaController extends Controller
             ->with('success', 'Data calon penerima berhasil dihapus!');
     }
 
+    // ── PRIVATE HELPERS ───────────────────────────────────────────────────────
+
+    private function simpanFotoKompres(\Illuminate\Http\UploadedFile $file): string
+    {
+        return $file->store('dokumen-warga', 'public');
+    }
+
+    private function buildAsetString(array $pilihan, string $manual): string
+    {
+        $items = array_filter(array_map('trim', $pilihan));
+
+        if ($manual !== '') {
+            foreach (explode(',', $manual) as $item) {
+                $item = trim($item);
+                if ($item !== '') $items[] = $item;
+            }
+        }
+
+        $items = array_unique($items);
+        return count($items) > 0 ? implode(', ', $items) : 'Tidak Punya';
+    }
+
+    private function deriveKondisiRumah(string $lantai, string $dinding): string
+    {
+        $skorLantai = match($lantai) {
+            'Tanah'         => 3,
+            'Papan/Kayu'    => 2,
+            'Semen Kasar'   => 2,
+            'Keramik Murah' => 1,
+            default         => 0,
+        };
+
+        $skorDinding = match($dinding) {
+            'Bambu'                 => 3,
+            'Anyaman Bambu/Gedek'   => 3,
+            'Kayu/Papan'            => 2,
+            'Tembok Tidak Plester'  => 1,
+            default                 => 0,
+        };
+
+        $total = $skorLantai + $skorDinding;
+
+        if ($total >= 4) return 'Tidak Layak';
+        if ($total >= 1) return 'Sedang';
+        return 'Layak';
+    }
+
     private function getPredictionExplanation($calonPenerima): array
     {
         $positive = [];
@@ -373,7 +455,10 @@ class CalonPenerimaController extends Controller
 
         if (strtolower($calonPenerima->pekerjaan) === 'tidak bekerja') {
             $positive[] = 'Tidak bekerja';
-        } elseif (in_array(strtolower($calonPenerima->pekerjaan), ['buruh harian', 'buruh', 'petani', 'nelayan'])) {
+        } elseif (in_array(strtolower($calonPenerima->pekerjaan), [
+            'buruh harian lepas', 'buruh harian', 'buruh',
+            'petani kecil', 'petani', 'mengurus rumah tangga',
+        ])) {
             $positive[] = 'Pekerjaan tergolong rentan secara ekonomi';
         } else {
             $negative[] = 'Memiliki pekerjaan yang relatif lebih stabil';
@@ -395,11 +480,12 @@ class CalonPenerimaController extends Controller
             $negative[] = 'Jumlah tanggungan sedikit';
         }
 
-        $aset = strtolower($calonPenerima->aset_kepemilikan);
-        if (str_contains($aset, 'mobil')) $negative[] = 'Memiliki aset bernilai tinggi (mobil)';
-        if (str_contains($aset, 'motor')) $negative[] = 'Memiliki aset kendaraan bermotor';
-        if (str_contains($aset, 'rumah')) $negative[] = 'Memiliki aset rumah';
-        if (in_array($aset, ['tidak ada', '-', 'tidak punya'])) $positive[] = 'Tidak memiliki aset berarti';
+        $aset = strtolower($calonPenerima->aset_kepemilikan ?? '');
+        if (str_contains($aset, 'aset lengkap'))      $negative[] = 'Memiliki aset bernilai tinggi';
+        elseif (str_contains($aset, 'motor + tanah')) $negative[] = 'Memiliki motor dan tanah';
+        elseif (str_contains($aset, 'motor + emas'))  $negative[] = 'Memiliki motor dan emas';
+        elseif (str_contains($aset, 'motor'))         $negative[] = 'Memiliki kendaraan bermotor';
+        elseif (str_contains($aset, 'tidak punya'))   $positive[] = 'Tidak memiliki aset berarti';
 
         if (strtolower($calonPenerima->bantuan_lain) === 'ya') {
             $negative[] = 'Sudah menerima bantuan lain';
@@ -413,30 +499,57 @@ class CalonPenerimaController extends Controller
             $positive[] = 'Usia cukup rentan';
         }
 
-        // Parameter baru
-        if (strtolower($calonPenerima->kondisi_rumah ?? '') === 'tidak layak') {
-            $positive[] = 'Kondisi rumah tidak layak huni';
-        } elseif (strtolower($calonPenerima->kondisi_rumah ?? '') === 'sedang') {
-            $positive[] = 'Kondisi rumah sedang';
-        } else {
-            $negative[] = 'Kondisi rumah layak';
-        }
+        $lantai = $calonPenerima->lantai_rumah ?? '';
+        match($lantai) {
+            'Tanah'         => $positive[] = 'Lantai rumah masih tanah',
+            'Papan/Kayu'    => $positive[] = 'Lantai rumah papan/kayu',
+            'Semen Kasar'   => $positive[] = 'Lantai rumah semen kasar',
+            'Keramik Murah' => $positive[] = 'Lantai rumah keramik murah',
+            'Keramik'       => $negative[] = 'Lantai rumah sudah keramik',
+            default         => null,
+        };
 
-        if (($calonPenerima->meteran_listrik ?? '') === '450VA') {
-            $positive[] = 'Meteran listrik 450VA (daya rendah)';
-        } elseif (($calonPenerima->meteran_listrik ?? '') === '900VA') {
-            $positive[] = 'Meteran listrik 900VA';
-        } else {
-            $negative[] = 'Meteran listrik 1300VA ke atas';
-        }
+        $dinding = $calonPenerima->dinding_rumah ?? '';
+        match($dinding) {
+            'Bambu'                => $positive[] = 'Dinding rumah bambu',
+            'Anyaman Bambu/Gedek'  => $positive[] = 'Dinding rumah anyaman bambu/gedek',
+            'Kayu/Papan'           => $positive[] = 'Dinding rumah kayu/papan',
+            'Tembok Tidak Plester' => $positive[] = 'Dinding rumah tembok belum diplester',
+            'Tembok Plester'       => $negative[] = 'Dinding rumah tembok plester',
+            default                => null,
+        };
 
-        if (strtolower($calonPenerima->sumber_air ?? '') === 'sungai') {
-            $positive[] = 'Sumber air dari sungai (kurang layak)';
-        } elseif (strtolower($calonPenerima->sumber_air ?? '') === 'sumur') {
-            $positive[] = 'Sumber air dari sumur';
-        } else {
-            $negative[] = 'Sumber air PDAM (layak)';
-        }
+        $atap = $calonPenerima->atap_rumah ?? '';
+        match($atap) {
+            'Bambu/Jerami'           => $positive[] = 'Atap rumah bambu/jerami',
+            'Seng'                   => $positive[] = 'Atap rumah seng',
+            'Campuran Seng+Genteng'  => $positive[] = 'Atap rumah campuran seng dan genteng',
+            'Genteng'                => $negative[] = 'Atap rumah sudah genteng',
+            'Genteng Beton'          => $negative[] = 'Atap rumah genteng beton',
+            default                  => null,
+        };
+
+        $statusRumah = $calonPenerima->status_kepemilikan_rumah ?? '';
+        match($statusRumah) {
+            'Menumpang'    => $positive[] = 'Status rumah menumpang',
+            'Sewa/Kontrak' => $positive[] = 'Status rumah sewa/kontrak',
+            'Milik Sendiri'=> $negative[] = 'Memiliki rumah sendiri',
+            default        => null,
+        };
+
+        match($calonPenerima->meteran_listrik ?? '') {
+            '450VA'   => $positive[] = 'Meteran listrik 450 VA',
+            '900VA'   => $positive[] = 'Meteran listrik 900 VA',
+            '1300VA+' => $negative[] = 'Meteran listrik 1300 VA ke atas',
+            default   => null,
+        };
+
+        match(strtolower($calonPenerima->sumber_air ?? '')) {
+            'sungai' => $positive[] = 'Sumber air dari sungai',
+            'sumur'  => $positive[] = 'Sumber air dari sumur',
+            'pdam'   => $negative[] = 'Sumber air PDAM',
+            default  => null,
+        };
 
         $probability = $calonPenerima->prediksiKelayakan->probability ?? 0;
         $probability = $probability <= 1 ? $probability * 100 : $probability;
