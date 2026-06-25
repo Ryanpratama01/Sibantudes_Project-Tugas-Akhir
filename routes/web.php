@@ -13,7 +13,6 @@ use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\FilterisasiController;
 use App\Http\Controllers\Admin\LaporanController;
-
 // RT Controllers
 use App\Http\Controllers\Rt\DashboardController as RtDashboardController;
 use App\Http\Controllers\Rt\CalonPenerimaController as RtCalonPenerimaController;
